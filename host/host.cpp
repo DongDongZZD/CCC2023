@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     auto *img_output_ref = new int [img_element_number];
 
     for (unsigned int i = 0; i < img_element_number; i++) {
-        img_input[i] = rand() % 100;
+        img_input[i] = rand() % 10;
     }
 
     /////////////////////////////////////////////////
@@ -114,6 +114,9 @@ int main(int argc, char** argv) {
     for (unsigned img_index = 0; img_index < img_number; img_index++) {
     	cal_ref(img_input + img_index * img_width * img_height, img_width, img_height, kernel_coeff, img_output_ref + img_index * img_width * img_height);
     }
+
+
+    auto start = std::chrono::steady_clock::now();
 
     /////////////////////////////////////////////////
     // Write input data to device global memory
@@ -126,6 +129,12 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     std::cout << "Synchronize input buffers data to device global memory" << std::endl;
     img_in_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+    auto end = std::chrono::steady_clock::now();
+ 
+    std::cout << "Elapsed time in nanoseconds: "
+        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
+        << " ns" << std::endl;
 
     /////////////////////////////////////////////////
     // Execute the PL compute units
