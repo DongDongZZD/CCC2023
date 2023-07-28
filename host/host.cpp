@@ -39,14 +39,6 @@ int main(int argc, char** argv) {
     auto tile_mm2mm_1    = xrt::kernel(device, uuid, "tile_mm2mm:{tile_mm2mm1}");
     auto sticker_mm2mm_1 = xrt::kernel(device, uuid, "sticker_mm2mm:{sticker_mm2mm1}");
 
-    auto mm2s_0 = xrt::kernel(device, uuid, "mm2s:{mm2s1}");
-    auto mm2s_1 = xrt::kernel(device, uuid, "mm2s:{mm2s2}");
-    auto mm2s_2 = xrt::kernel(device, uuid, "mm2s:{mm2s3}");
-    auto mm2s_3 = xrt::kernel(device, uuid, "mm2s:{mm2s4}");
-    auto mm2s_4 = xrt::kernel(device, uuid, "mm2s:{mm2s5}");
-    auto mm2s_5 = xrt::kernel(device, uuid, "mm2s:{mm2s6}");
-    auto mm2s_6 = xrt::kernel(device, uuid, "mm2s:{mm2s7}");
-
     auto s2mm_0 = xrt::kernel(device, uuid, "s2mm:{s2mm1}");
     auto s2mm_1 = xrt::kernel(device, uuid, "s2mm:{s2mm2}");
     auto s2mm_2 = xrt::kernel(device, uuid, "s2mm:{s2mm3}");
@@ -84,20 +76,11 @@ int main(int argc, char** argv) {
 
     // 用来存储所有的图片
     // host mem ------> device mem (img_in_buffer)
+    // 后续：img_in_buffer ---(PL:tile_mm2mm_1)---> aie kernel
     auto img_in_buffer = xrt::bo(device, img_size_in_bytes, tile_mm2mm_1.group_id(0));
 
-    // 用来存储 PL tile 之后的分块数据，此数据也是 aie kernel 的输入数据
-    // img_in_buffer ---(PL:tile_mm2mm_1)---> in_buffer_
-    auto in_buffer_0 = xrt::bo(device, tile_size_in_bytes, mm2s_0.group_id(0));
-    auto in_buffer_1 = xrt::bo(device, tile_size_in_bytes, mm2s_1.group_id(0));
-    auto in_buffer_2 = xrt::bo(device, tile_size_in_bytes, mm2s_2.group_id(0));
-    auto in_buffer_3 = xrt::bo(device, tile_size_in_bytes, mm2s_3.group_id(0));
-    auto in_buffer_4 = xrt::bo(device, tile_size_in_bytes, mm2s_4.group_id(0));
-    auto in_buffer_5 = xrt::bo(device, tile_size_in_bytes, mm2s_5.group_id(0));
-    auto in_buffer_6 = xrt::bo(device, tile_size_in_bytes, mm2s_6.group_id(0));
-
     // 用于存储 aie kernel 的计算结果
-    // in_buffer_ ---(PL:mm2s_)---> aie kernel ---(PL:s2mm_)---> out_buffer_
+    // aie kernel ---(PL:s2mm_)---> out_buffer_
     auto out_buffer_0 = xrt::bo(device, tile_size_in_bytes, s2mm_0.group_id(0));
     auto out_buffer_1 = xrt::bo(device, tile_size_in_bytes, s2mm_1.group_id(0));
     auto out_buffer_2 = xrt::bo(device, tile_size_in_bytes, s2mm_2.group_id(0));
@@ -128,7 +111,7 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     std::cout << "Cal output reference" << std::endl;
     int kernel_coeff[16] = {64, 128, 64, 128, 256, 128, 64, 128, 64};
-    for (unsigned img_index = 0; img_index < img_number; img_index++) {
+    for (int img_index = 0; img_index < img_number; img_index++) {
     	cal_ref(img_input + img_index * img_width * img_height, img_width, img_height, kernel_coeff, img_output_ref + img_index * img_width * img_height);
     }
 
@@ -149,13 +132,6 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     std::cout << "Run the PL kernels" << std::endl;
 
-    std::cout << "Run the tile PL" << std::endl;
-    auto run_tile_mm2mm_1 = tile_mm2mm_1(
-	    img_in_buffer, 
-	    in_buffer_0, in_buffer_1, in_buffer_2, in_buffer_3, in_buffer_4,
-	    in_buffer_5, in_buffer_6);
-    run_tile_mm2mm_1.wait();
-
     std::cout << "Run the s2mm PL" << std::endl;
     auto run_s2mm_0 = s2mm_0(out_buffer_0, nullptr, tile_size_in_bytes);
     auto run_s2mm_1 = s2mm_1(out_buffer_1, nullptr, tile_size_in_bytes);
@@ -165,31 +141,12 @@ int main(int argc, char** argv) {
     auto run_s2mm_5 = s2mm_5(out_buffer_5, nullptr, tile_size_in_bytes);
     auto run_s2mm_6 = s2mm_6(out_buffer_6, nullptr, tile_size_in_bytes);
 
-    
-    std::cout << "Run the mm2s PL" << std::endl;
-    auto run_mm2s_0 = mm2s_0(in_buffer_0, nullptr, tile_size_in_bytes);
-    auto run_mm2s_1 = mm2s_1(in_buffer_1, nullptr, tile_size_in_bytes);
-    auto run_mm2s_2 = mm2s_2(in_buffer_2, nullptr, tile_size_in_bytes);
-    auto run_mm2s_3 = mm2s_3(in_buffer_3, nullptr, tile_size_in_bytes);
-    auto run_mm2s_4 = mm2s_4(in_buffer_4, nullptr, tile_size_in_bytes);
-    auto run_mm2s_5 = mm2s_5(in_buffer_5, nullptr, tile_size_in_bytes);
-    auto run_mm2s_6 = mm2s_6(in_buffer_6, nullptr, tile_size_in_bytes);
-
-    // Wait for kernels to complete
-    run_mm2s_0.wait();
-    std::cout << "mm2s_0 completed" << std::endl;
-    run_mm2s_1.wait();
-    std::cout << "mm2s_1 completed" << std::endl;
-    run_mm2s_2.wait();
-    std::cout << "mm2s_2 completed" << std::endl;
-    run_mm2s_3.wait();
-    std::cout << "mm2s_3 completed" << std::endl;
-    run_mm2s_4.wait();
-    std::cout << "mm2s_4 completed" << std::endl;
-    run_mm2s_5.wait();
-    std::cout << "mm2s_5 completed" << std::endl;
-    run_mm2s_6.wait();
-    std::cout << "mm2s_6 completed" << std::endl;
+    std::cout << "Run the tile PL" << std::endl;
+    auto run_tile_mm2mm_1 = tile_mm2mm_1(
+	    img_in_buffer, 
+	    nullptr, nullptr, nullptr, nullptr, nullptr,
+	    nullptr, nullptr);
+    run_tile_mm2mm_1.wait();
 
     run_s2mm_0.wait();
     std::cout << "s2mm_0 completed" << std::endl;
