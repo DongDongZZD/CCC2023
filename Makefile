@@ -77,12 +77,6 @@ $(OUTPUT_DIR)/${XCLBIN_NAME}.xclbin: $(OUTPUT_DIR)/${XCLBIN_NAME}.xsa
 	  -o $@ 2>&1 | tee $(XCLBIN_NAME)_xclbin.log
 	@echo "### ***** $(XCLBIN_NAME).xclbin packaging done! *****"
 
-alloc:
-	source /home/qycheng/hacc_demo/env/vck5000_alloc 3
-
-exit:
-	source /home/qycheng/hacc_demo/env/vck5000_exit
-
 run: 
 	make -C $(HOST_DIR) clean; \
 	make -C $(HOST_DIR); \
