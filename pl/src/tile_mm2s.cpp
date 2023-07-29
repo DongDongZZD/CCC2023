@@ -26,9 +26,9 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
 
     unsigned pingpong = 0;
 
-    for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
+    for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
         #pragma HLS unroll
-        load_tail(mem_in, tile_input_buffer_0[i], 0, i, tile_width_number, tile_height_number);
+        load_tail(mem_in, tile_input_buffer_0[uid], 0, uid, tile_width_number, tile_height_number);
     }
 
     tile_loop:
@@ -36,14 +36,14 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
 
         if (pingpong = 0) {
 
-            for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-                #pragma HLS unroll
-                load_tail(mem_in, tile_input_buffer_1[i], gid, i, tile_width_number, tile_height_number);
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll AIE_KERNEL_NUMBER
+                load_tail(mem_in, tile_input_buffer_1[uid], gid, uid, tile_width_number, tile_height_number);
             }
 
-            for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-                #pragma HLS unroll
-                transfer_tail(tile_input_buffer_0[i], i,
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll AIE_KERNEL_NUMBER
+                transfer_tail(tile_input_buffer_0[uid], uid,
                                 s0, s1, s2, s3, s4,  s5,
                                 s6, s7, s8, s9, s10, s11);
             }
@@ -54,14 +54,14 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
 
         else {
             
-            for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-                #pragma HLS unroll
-                load_tail(mem_in, tile_input_buffer_0[i], gid, i, tile_width_number, tile_height_number);
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll AIE_KERNEL_NUMBER
+                load_tail(mem_in, tile_input_buffer_0[uid], gid, uid, tile_width_number, tile_height_number);
             }
 
-            for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-                #pragma HLS unroll
-                transfer_tail(tile_input_buffer_1[i], i,
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll AIE_KERNEL_NUMBER
+                transfer_tail(tile_input_buffer_1[uid], uid,
                                 s0, s1, s2, s3, s4,  s5,
                                 s6, s7, s8, s9, s10, s11);
             }
@@ -73,17 +73,17 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
     }
 
     if (pingpong == 0) {
-        for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-            #pragma HLS unroll
-            transfer_tail(tile_input_buffer_0[i], i,
+        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+            #pragma HLS unroll AIE_KERNEL_NUMBER
+            transfer_tail(tile_input_buffer_0[uid], uid,
                             s0, s1, s2, s3, s4,  s5,
                             s6, s7, s8, s9, s10, s11);
         }
     }
     else {
-        for (unsigned i = 0; i < AIE_KERNEL_NUMBER; i++) {
-            #pragma HLS unroll
-            transfer_tail(tile_input_buffer_1[i], i,
+        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+            #pragma HLS unroll AIE_KERNEL_NUMBER
+            transfer_tail(tile_input_buffer_1[uid], uid,
                             s0, s1, s2, s3, s4,  s5,
                             s6, s7, s8, s9, s10, s11);
         }
@@ -98,7 +98,6 @@ void load_tail(ap_int<BUS_DWIDTH> *mem_in, ap_int<DWIDTH> *tile_input_buffer, un
     unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
     unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2); 
 
-    // ap_int<DWIDTH>* base = (ap_int<DWIDTH>*)mem_in + offset_height * IMG_WIDTH + offset_width;
     unsigned base = offset_height * IMG_WIDTH + offset_width;
 
     unsigned count = 0;
@@ -107,12 +106,12 @@ void load_tail(ap_int<BUS_DWIDTH> *mem_in, ap_int<DWIDTH> *tile_input_buffer, un
             && tile_index_width >= 0 && tile_index_width < tile_width_number - 1) {
         for (unsigned th = 0; th < TILE_HEIGHT; th++) {
             for (unsigned tw = 0; tw < TILE_WIDTH; tw++) {
+                #pragma HLS unroll
                 
                 unsigned mem_in_index_uid = (th * IMG_WIDTH + tw + base) % DATA_NUM;
                 unsigned mem_in_index_gid = (th * IMG_WIDTH + tw + base) / DATA_NUM;
 
                 if (tw == 0 || mem_in_index_uid == 0) {
-                    // ap_int<BUS_DWIDTH> mem_in_tmp = *((ap_int<BUS_DWIDTH>*)(base + th * IMG_WIDTH + tw));
                     ap_int<BUS_DWIDTH> mem_in_tmp = mem_in[mem_in_index_gid];
                 }
 

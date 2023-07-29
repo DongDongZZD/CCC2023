@@ -9,6 +9,7 @@
 #include <random>
 #include <typeinfo>
 #include <math.h>
+
 #include <xrt.h>
 #include <experimental/xrt_kernel.h>
 
@@ -19,6 +20,11 @@ void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coe
 int main(int argc, char** argv) {
     if (argc < 2) {
         std::cout << "Usage: " << argv[0] << " <XCLBIN File>" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if (argc < 3) {
+        std::cout << "Usage: " << argv[0] << " <XCLBIN File>" << " <image number>" <<std::endl;
         return EXIT_FAILURE;
     }
 
@@ -44,15 +50,15 @@ int main(int argc, char** argv) {
     std::cout << "Allocate Buffer in Global Memory" << std::endl;
     unsigned img_width   = 3840;
     unsigned img_height  = 2160;
-    unsigned img_number  = 2;
+    unsigned img_number  = strtoul(argv[2]);
     
-    // 所有 img 中的元素个数
-    unsigned img_element_number  = img_width * img_height * img_number;
+    // 一张 img 中的元素个数
+    unsigned img_element_number  = img_width * img_height;
     
-    // 所有输入图片的拼接后的大小
+    // 一张输入图片的拼接后的大小
     size_t img_buffer_size  = sizeof(int) * img_element_number;
 
-    // 用来存储所有的图片
+    // 用来存储一张图片
     // host mem ------> device mem (img_in_buffer)
     // 后续：img_in_buffer ---(PL:tile_mm2s_1)---> aie kernel
     auto img_in_buffer = xrt::bo(device, img_buffer_size, tile_mm2s_1.group_id(0));
@@ -80,9 +86,7 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     std::cout << "Cal output reference" << std::endl;
     int kernel_coeff[16] = {64, 128, 64, 128, 256, 128, 64, 128, 64};
-    for (unsigned img_index = 0; img_index < img_number; img_index++) {
-    	cal_ref(img_input + img_index * img_width * img_height, img_width, img_height, kernel_coeff, img_output_ref + img_index * img_width * img_height);
-    }
+    cal_ref(img_input, img_width, img_height, kernel_coeff, img_output_ref);
 
     /////////////////////////////////////////////////
     // Write input data to device global memory
@@ -157,20 +161,9 @@ int main(int argc, char** argv) {
     }
     std::cout << "Erro time: " << erro << std::endl;
 
-    /////////////////////////////////////////////////
-    // Writing data to output file
-    /////////////////////////////////////////////////
-    std::cout << "Writing data to output file" << std::endl;
-    std::ofstream outputfile;
-    // std::cout << "Ref Out1 " << std::to_string(img_output_ref[0]) << std::endl;
-    // std::cout << "AIE Out1 " << std::to_string(img_output_aie[0]) << std::endl;
-    outputfile.open("build.hw/aie_hw_run_data/output0.txt");
-    for (unsigned i = 0; i < img_element_number; i++) {
-        outputfile << img_output_aie[i] << std::endl;
-    }
-    outputfile.close();
-
     for(unsigned id = 1; id < img_number; id++){
+
+        std::cout << "----------------------------------\n----------------------------\n";
 	    std::cout << "IMG " << id << std::endl;
 	    for (unsigned int i = 0; i < img_element_number; i++) {
 	        img_input[i] = rand() % 100;
@@ -180,9 +173,7 @@ int main(int argc, char** argv) {
 	    // Cal output reference
 	    /////////////////////////////////////////////////
 	    std::cout << "Cal output reference" << std::endl;
-	    for (unsigned img_index = 0; img_index < img_number; img_index++) {
-	    	cal_ref(img_input + img_index * img_width * img_height, img_width, img_height, kernel_coeff, img_output_ref + img_index * img_width * img_height);
-	    }
+        cal_ref(img_input, img_width, img_height, kernel_coeff, img_output_ref);
 	
 	    /////////////////////////////////////////////////
 	    // Write input data to device global memory
@@ -208,15 +199,6 @@ int main(int argc, char** argv) {
 	    std::cout << "Run the PL kernels" << std::endl;
 	
 	    start = std::chrono::steady_clock::now();
-	    // run_sticker_s2mm_1.set_args(
-		   //  nullptr, nullptr, nullptr, nullptr, nullptr,
-		   //  nullptr, nullptr, 
-		   //  img_out_buffer);
-	
-	    // run_tile_mm2s_1.set_args(
-		   //  img_in_buffer, 
-		   //  nullptr, nullptr, nullptr, nullptr, nullptr,
-		   //  nullptr, nullptr);
 
 	    run_sticker_s2mm_1.start();
 	    run_tile_s2mm_1.start();
@@ -259,23 +241,6 @@ int main(int argc, char** argv) {
 	        }
 	    }
 	    std::cout << "Erro time: " << erro << std::endl;
-
-	    /////////////////////////////////////////////////
-	    // Writing data to output file
-	    /////////////////////////////////////////////////
-	    std::cout << "Writing data to output file" << std::endl;
-	    std::ofstream outputfile;
-	    // std::cout << "Ref Out1 " << std::to_string(img_output_ref[0]) << std::endl;
-	    // std::cout << "AIE Out1 " << std::to_string(img_output_aie[0]) << std::endl;
-	    std::stringstream ss;
-	    ss << "build.hw/aie_hw_run_data/output";
-	    ss << id;
-	    ss << ".txt";
-	    outputfile.open(ss.str());
-	    for (unsigned i = 0; i < img_element_number; i++) {
-	        outputfile << img_output_aie[i] << std::endl;
-	    }
-	    outputfile.close();
     }
 
     delete [] img_input;

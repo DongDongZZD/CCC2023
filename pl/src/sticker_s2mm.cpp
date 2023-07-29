@@ -98,61 +98,61 @@ void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>
 
     unsigned count = 0;
 
-    for (int th = 0; th < tile_height; th++) {
-        for (int tw = 0; tw < tile_width; tw++) {
+    for (int th = 0; th < TILE_HEIGHT; th++) {
+        for (int tw = 0; tw < TILE_WIDTH; tw++) {
 
-            mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
+            unsigned mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
 
             if (tile_index_height == 0 && tile_index_width == 0) {
-                if (th >= 0 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
+                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
+                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
-                if (th >= 1 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
+                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
-                if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
+                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
-                if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
+                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < img_width) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
-                if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
+                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < img_width) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
-                if (th >= 1 && th < tile_height && tw >= 0 && tw < tile_width - 1 && th + offset_height < img_height) {
+                if (th >= 1 && th < TILE_HEIGHT && tw >= 0 && tw < TILE_WIDTH - 1 && th + offset_height < img_height) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width - 1 && th + offset_height < img_height) {
+                if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH - 1 && th + offset_height < img_height) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
 
             else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
-                if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width && (th + offset_height < img_height) && (tw + offset_width < img_width)) {
+                if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH && (th + offset_height < img_height) && (tw + offset_width < img_width)) {
                     mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
             }
