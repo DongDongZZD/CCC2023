@@ -77,6 +77,11 @@ $(OUTPUT_DIR)/${XCLBIN_NAME}.xclbin: $(OUTPUT_DIR)/${XCLBIN_NAME}.xsa
 	  -o $@ 2>&1 | tee $(XCLBIN_NAME)_xclbin.log
 	@echo "### ***** $(XCLBIN_NAME).xclbin packaging done! *****"
 
+run: 
+	make -C $(HOST_DIR) clean; \
+	make -C $(HOST_DIR); \
+	$(HOST_APP) $(OUTPUT_DIR)/$(XCLBIN_NAME).xclbin
+
 clean:
 	make -C $(AIE_DIR) clean; \
 	make -C $(PL_DIR) clean; \
