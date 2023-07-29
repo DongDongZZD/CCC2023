@@ -433,12 +433,6 @@ void filter2D_api_4_seq(input_window_int32* img_in, output_window_int32* img_out
     window_incr(img_in, tile_width*tile_height);
     window_incr(img_out, tile_width*tile_height);
     filter2D_api(img_in, img_out);
-    window_incr(img_in, tile_width*tile_height);
-    window_incr(img_out, tile_width*tile_height);
-    filter2D_api(img_in, img_out);
-    window_incr(img_in, tile_width*tile_height);
-    window_incr(img_out, tile_width*tile_height);
-    filter2D_api(img_in, img_out);
 }
 
 } // aie

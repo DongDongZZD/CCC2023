@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "aie_kernels.h"
 #include "xf_filter2d_aie.h"
 
 void filter2D(input_window_int32* input, output_window_int32* output) {

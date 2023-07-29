@@ -7,7 +7,7 @@
 #include <hls_stream.h>
 
 #define DWIDTH 32
-#define AIE_KERNEL_NUMBER 28
+#define AIE_KERNEL_NUMBER 14
 typedef qdma_axis<DWIDTH, 0, 0, 0> data;
 
 unsigned img_width = 720;

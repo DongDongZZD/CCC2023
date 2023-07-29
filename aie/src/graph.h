@@ -8,7 +8,7 @@
 
 using namespace adf;
 
-template<int R=400>
+template<int R=200>
 class Filter2DBlock : public graph {
     private:
         kernel k;
@@ -20,8 +20,8 @@ class Filter2DBlock : public graph {
         Filter2DBlock() {
             k = kernel::create(filter2D);
 
-            connect<window<tile_width*tile_height*sizeof(int)*4>> int32_din (din, k.in[0]);
-            connect<window<tile_width*tile_height*sizeof(int)*4>> int32_dout(k.out[0], dout);
+            connect<window<tile_width*tile_height*sizeof(int)*2>> int32_din (din, k.in[0]);
+            connect<window<tile_width*tile_height*sizeof(int)*2>> int32_dout(k.out[0], dout);
 
             source(k) = "aie_kernels/xf_filter2d.cpp";
 
