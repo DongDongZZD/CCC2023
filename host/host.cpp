@@ -12,7 +12,7 @@
 #include <xrt.h>
 #include <experimental/xrt_kernel.h>
 
-#define AIE_KERNEL_NUMBER 7
+#define AIE_KERNEL_NUMBER 12
 
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer);
 
@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
     // Allocating Buffer in Global Memory
     /////////////////////////////////////////////////
     std::cout << "Allocate Buffer in Global Memory" << std::endl;
-    unsigned img_width   = 720;
-    unsigned img_height  = 480;
+    unsigned img_width   = 3840;
+    unsigned img_height  = 2160;
     unsigned img_number  = 2;
     
     // 所有 img 中的元素个数
