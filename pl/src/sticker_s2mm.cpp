@@ -4,123 +4,218 @@
 #include <math.h>
 #include "config.h"
 
+void load_tile(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
+hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
+hls::stream<data> &s7, hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
+ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height);
+
+void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>* mem_out,
+                    unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height);
+
 // 将当前横纵坐标对应的 tile 拼接到图片中
 void sticker_s2mm(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
 hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
+hls::stream<data> &s7, hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
 ap_int<DWIDTH> *mem_out) {
 
+    ap_int<DWIDTH> aie_input_buffer_0[AIE_KERNEL_NUMBER][TILE_ELEMENT];
+    ap_int<DWIDTH> aie_input_buffer_1[AIE_KERNEL_NUMBER][TILE_ELEMENT];
+
     // 每张图片的 tile 个数（width 和 height 两个维度）
-    unsigned tile_num_width  = ceil((float)(img_width  - tile_width)  / (tile_width  - 2)) + 1;
-    unsigned tile_num_height = ceil((float)(img_height - tile_height) / (tile_height - 2)) + 1;
+    unsigned tile_num_width  = ceil((float)(IMG_WIDTH  - TILE_WIDTH)  / (TILE_WIDTH  - 2)) + 1;
+    unsigned tile_num_height = ceil((float)(IMG_HEIGHT - TILE_HEIGHT) / (TILE_HEIGHT - 2)) + 1;
+    unsigned tile_loop_group = ceil((float)(tile_num_width * tile_num_height) / AIE_KERNEL_NUMBER);
 
-    // 用作 mem_out 的索引
-    unsigned mem_out_index;
+    unsigned pingpong = 0;
 
-    // 遍历所有图片
-    for (unsigned img_index = 0; img_index< img_number; img_index++) {
+    for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+        #pragma HLS unroll
+        load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
+                  aie_input_buffer_0[uid], 0, uid, tile_num_width, tile_num_height);
+    }
 
-        // 已经处理过的图片对应的元素个数
-        unsigned offset_img = img_index * img_width * img_height;
-        
-        // 遍历所有的 tile
-        for (unsigned tile_index_height = 0; tile_index_height < tile_num_height; tile_index_height++) {
-            for (unsigned tile_index_width = 0; tile_index_width < tile_num_width; tile_index_width++) {
+    tile_loop:
+    for (unsigned gid = 1; gid < tile_loop_group; gid++) {
 
-                // 当前的 tile 应该从第 aie_index 个 aie kernel 对应的 mem 处取得
-                unsigned aie_index = (tile_index_height * tile_num_width + tile_index_width) % AIE_KERNEL_NUMBER;
+        if (pingpong = 0) {
 
-                // 当前 tile 在当前图片中的偏移
-                unsigned offset_width  = tile_index_width  * (tile_width  - 2);
-                unsigned offset_height = tile_index_height * (tile_height - 2);
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll
+                load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
+                          aie_input_buffer_1[uid], gid, uid, tile_num_width, tile_num_height);
+            }
 
-                // 遍历当前 tile
-                for (int th = 0; th < tile_height; th++) {
-                    for (int tw = 0; tw < tile_width; tw++) {
-                        data x;
-                        switch(aie_index) {
-                            case 0:
-                                x = s0.read();
-                                break;
-                            case 1:
-                                x = s1.read();
-                                break;
-                            case 2:
-                                x = s2.read();
-                                break;
-                            case 3:
-                                x = s3.read();
-                                break;
-                            case 4:
-                                x = s4.read();
-                                break;
-                            case 5:
-                                x = s5.read();
-                                break;
-                            case 6:
-                                x = s6.read();
-                                break;
-                            default:
-                                x = s0.read();
-                                break;
-                        }
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll
+                transfer_tile(aie_input_buffer_0[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
+            }
 
-                        mem_out_index = (th + offset_height) * img_width + tw + offset_width + offset_img;
+            pingpong = 1;
 
-                        if (tile_index_height == 0 && tile_index_width == 0) {
-                            if (th >= 0 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+        }
 
-                        else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                            if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+        else {
+            
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll
+                load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
+                          aie_input_buffer_0[uid], gid, uid, tile_num_width, tile_num_height);
+            }
 
-                        else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
-                            if (th >= 1 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+                #pragma HLS unroll
+                transfer_tile(aie_input_buffer_1[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
+            }
 
-                        else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
-                            if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+            pingpong = 0;
 
-                        else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
-                            if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+        }
 
-                        else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
-                            if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+    }
 
-                        else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
-                            if (th >= 1 && th < tile_height && tw >= 0 && tw < tile_width - 1 && th + offset_height < img_height) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+    if (pingpong == 0) {
+        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+            #pragma HLS unroll
+            transfer_tile(aie_input_buffer_0[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
+        }
+    }
+    else {
+        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
+            #pragma HLS unroll
+            transfer_tile(aie_input_buffer_1[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
+        }
+    }
+}
 
-                        else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                            if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width - 1 && th + offset_height < img_height) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
+void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>* mem_out,
+                    unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height) {
+    
+    unsigned tile_index_width  = (gid * AIE_KERNEL_NUMBER + uid) % tile_num_width;
+    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_height;
 
-                        else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
-                            if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width && (th + offset_height < img_height) && (tw + offset_width < img_width)) {
-                                mem_out[mem_out_index] = x.data;
-                            }
-                        }
-                    }
+    unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
+    unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2); 
+
+    unsigned count = 0;
+
+    for (int th = 0; th < tile_height; th++) {
+        for (int tw = 0; tw < tile_width; tw++) {
+
+            mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
+
+            if (tile_index_height == 0 && tile_index_width == 0) {
+                if (th >= 0 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
                 }
+            }
+
+            else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
+                if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
+                if (th >= 1 && th < tile_height - 1 && tw >= 0 && tw < tile_width - 1) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
+                if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width - 1) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
+                if (th >= 0 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
+                if (th >= 1 && th < tile_height - 1 && tw >= 1 && tw < tile_width && tw + offset_width < img_width) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
+                if (th >= 1 && th < tile_height && tw >= 0 && tw < tile_width - 1 && th + offset_height < img_height) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
+                if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width - 1 && th + offset_height < img_height) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+
+            else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
+                if (th >= 1 && th < tile_height && tw >= 1 && tw < tile_width && (th + offset_height < img_height) && (tw + offset_width < img_width)) {
+                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                }
+            }
+        }
+    }
+}
+
+void load_tile(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
+hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
+hls::stream<data> &s7, hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
+ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height) {
+
+    unsigned tile_index_width  = (gid * AIE_KERNEL_NUMBER + uid) % tile_num_width;
+    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_height;
+
+    unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
+    unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
+
+    unsigned count = 0;
+
+    for (int th = 0; th < TILE_HEIGHT; th++) {
+        for (int tw = 0; tw < TILE_WIDTH; tw++) {
+            data x;
+            switch(uid) {
+                case 0:
+                    aie_input_buffer[count++] = s0.read();
+                    break;
+                case 1:
+                    aie_input_buffer[count++] = s1.read();
+                    break;
+                case 2:
+                    aie_input_buffer[count++] = s2.read();
+                    break;
+                case 3:
+                    aie_input_buffer[count++] = s3.read();
+                    break;
+                case 4:
+                    aie_input_buffer[count++] = s4.read();
+                    break;
+                case 5:
+                    aie_input_buffer[count++] = s5.read();
+                    break;
+                case 6:
+                    aie_input_buffer[count++] = s6.read();
+                    break;
+                case 7:
+                    aie_input_buffer[count++] = s7.read();
+                    break;
+                case 8:
+                    aie_input_buffer[count++] = s8.read();
+                    break;
+                case 9:
+                    aie_input_buffer[count++] = s9.read();
+                    break;
+                case 10:
+                    aie_input_buffer[count++] = s10.read();
+                    break;
+                case 11:
+                    aie_input_buffer[count++] = s11.read();
+                    break;
+                default:
+                    aie_input_buffer[count++] = s0.read();
+                    break;
             }
         }
     }
