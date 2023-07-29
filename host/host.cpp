@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
     // Read output buffer data to local buffer
     /////////////////////////////////////////////////
     img_out_buffer.read(img_output_aie);
-    auto end = std::chrono::steady_clock::now();
+    end = std::chrono::steady_clock::now();
     std::cout << "-----------------------------------------" << std::endl;
     std::cout << "Transfer data from device to host in nanoseconds: "
         << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
