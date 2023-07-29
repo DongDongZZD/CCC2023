@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     auto *img_output_ref = new int [img_element_number];
 
     for (unsigned int i = 0; i < img_element_number; i++) {
-        img_input[i] = rand() % 10;
+        img_input[i] = rand() % 100;
     }
 
     /////////////////////////////////////////////////
