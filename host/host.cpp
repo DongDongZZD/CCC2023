@@ -70,6 +70,7 @@ int main(int argc, char** argv) {
     auto *img_output_aie = new int [img_element_number];
     auto *img_output_ref = new int [img_element_number];
 
+    std::cout << "IMG 0" << std::endl;
     for (unsigned int i = 0; i < img_element_number; i++) {
         img_input[i] = rand() % 100;
     }
@@ -170,6 +171,7 @@ int main(int argc, char** argv) {
     outputfile.close();
 
     for(unsigned id = 1; id < img_number; id++){
+	    std::cout << "IMG " << id << std::endl;
 	    for (unsigned int i = 0; i < img_element_number; i++) {
 	        img_input[i] = rand() % 100;
 	    }
