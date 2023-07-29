@@ -6,12 +6,15 @@
 
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(ap_int<BUS_DWIDTH> *mem_in, 
-hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, hls::stream<data> &s3, 
-hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
+hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2,  hls::stream<data> &s3, 
+hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,  hls::stream<data> &s7,
+hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11) {
+
+    ap_int<DWIDTH> tile_buffer[AIE_KERNEL_NUMBER][TILE_ELEMENT];
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
-    unsigned tile_width_number  = ceil((float)(img_width  - tile_width)  / (tile_width  - 2)) + 1;
-    unsigned tile_height_number = ceil((float)(img_height - tile_height) / (tile_height - 2)) + 1;
+    unsigned tile_width_number  = ceil((float)(img_width  - TILE_WIDTH)  / (TILE_WIDTH  - 2)) + 1;
+    unsigned tile_height_number = ceil((float)(img_height - TILE_HEIGHT) / (TILE_HEIGHT - 2)) + 1;
 
     // 用作 mem_in 的索引
     int mem_in_index;
@@ -34,16 +37,16 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                 unsigned aie_index = (tile_index_height * tile_width_number + tile_index_width) % AIE_KERNEL_NUMBER;
                 
                 // 当前 tile 相对于第一个元素的偏移
-                unsigned offset_width  = tile_index_width * (tile_width - 2);
-                unsigned offset_height = tile_index_height * (tile_height - 2);
+                unsigned offset_width  = tile_index_width * (TILE_WIDTH - 2);
+                unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
                 ap_int<DWIDTH>* base = (ap_int<DWIDTH>*)mem_in + offset_img + offset_height * img_width + offset_width;
 
                 if (tile_index_height >= 0 && tile_index_height < tile_height_number - 1 
                         && tile_index_width >= 0 && tile_index_width < tile_width_number - 1) {
-                    for (unsigned th = 0; th < tile_height; th++) {
-                        for (unsigned tw = 0; tw < tile_width; tw++) {
+                    for (unsigned th = 0; th < TILE_HEIGHT; th++) {
+                        for (unsigned tw = 0; tw < TILE_WIDTH; tw++) {
                             
-                            mem_in_index_uid = (th * tile_width + tw) % DATA_NUM;
+                            mem_in_index_uid = (th * TILE_WIDTH + tw) % DATA_NUM;
 
                             if (mem_in_index_uid == 0) {
                                 mem_in_tmp = *((ap_int<BUS_DWIDTH>*)(base + th * img_width + tw));
@@ -84,8 +87,8 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                 }
 
                 else {
-                    for (unsigned th = 0; th < tile_height; th++) {
-                        for (unsigned tw = 0; tw < tile_width; tw++) {
+                    for (unsigned th = 0; th < TILE_HEIGHT; th++) {
+                        for (unsigned tw = 0; tw < TILE_WIDTH; tw++) {
                             
                             // 遍历到图片边缘后需要进行 padding 操作 
                             // mem_in_index == -1 表示补零
