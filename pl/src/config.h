@@ -6,12 +6,16 @@
 #include <ap_int.h>
 #include <hls_stream.h>
 
+#define AIE_KERNEL_NUMBER 12
+#define BUS_DWIDTH 256
 #define DWIDTH 32
-#define AIE_KERNEL_NUMBER 14
-typedef qdma_axis<DWIDTH, 0, 0, 0> data;
+#define DATA_NUM (BUS_DWIDTH / DWIDTH)
 
-unsigned img_width = 720;
-unsigned img_height = 480;
-unsigned img_number = 2;
-unsigned tile_width = 64;
-unsigned tile_height = 32;
+#define TILE_WIDTH  64
+#define TILE_HEIGHT 32
+#define TILE_ELEMENT TILE_WIDTH * TILE_HEIGHT
+
+#define IMG_WIDTH 3840
+#define IMG_HEIGHT 2160
+
+typedef qdma_axis<DWIDTH, 0, 0, 0> data;
