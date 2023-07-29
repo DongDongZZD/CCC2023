@@ -163,11 +163,118 @@ int main(int argc, char** argv) {
     std::ofstream outputfile;
     // std::cout << "Ref Out1 " << std::to_string(img_output_ref[0]) << std::endl;
     // std::cout << "AIE Out1 " << std::to_string(img_output_aie[0]) << std::endl;
-    outputfile.open("build.hw/aie_hw_run_data/output.txt");
+    outputfile.open("build.hw/aie_hw_run_data/output0.txt");
     for (unsigned i = 0; i < img_element_number; i++) {
         outputfile << img_output_aie[i] << std::endl;
     }
     outputfile.close();
+
+    for(unsigned id = 1; id < img_number; id++){
+	    for (unsigned int i = 0; i < img_element_number; i++) {
+	        img_input[i] = rand() % 100;
+	    }
+	
+	    /////////////////////////////////////////////////
+	    // Cal output reference
+	    /////////////////////////////////////////////////
+	    std::cout << "Cal output reference" << std::endl;
+	    for (unsigned img_index = 0; img_index < img_number; img_index++) {
+	    	cal_ref(img_input + img_index * img_width * img_height, img_width, img_height, kernel_coeff, img_output_ref + img_index * img_width * img_height);
+	    }
+	
+	    /////////////////////////////////////////////////
+	    // Write input data to device global memory
+	    /////////////////////////////////////////////////
+	    std::cout << "Write input data to device global memory" << std::endl;
+	    auto start = std::chrono::steady_clock::now();
+	    img_in_buffer.write(img_input);
+	
+	    /////////////////////////////////////////////////
+	    // Synchronize input buffers data to device global memory
+	    /////////////////////////////////////////////////
+	    img_in_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+	    auto end = std::chrono::steady_clock::now();
+	    std::cout << "-----------------------------------------" << std::endl;
+	    std::cout << "Transfer data from host to device in nanoseconds: "
+	        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
+	        << " ns" << std::endl;
+	    std::cout << "-----------------------------------------" << std::endl;
+	
+	    /////////////////////////////////////////////////
+	    // Execute the PL compute units
+	    /////////////////////////////////////////////////
+	    std::cout << "Run the PL kernels" << std::endl;
+	
+	    start = std::chrono::steady_clock::now();
+	    // run_sticker_s2mm_1.set_args(
+		   //  nullptr, nullptr, nullptr, nullptr, nullptr,
+		   //  nullptr, nullptr, 
+		   //  img_out_buffer);
+	
+	    // run_tile_mm2s_1.set_args(
+		   //  img_in_buffer, 
+		   //  nullptr, nullptr, nullptr, nullptr, nullptr,
+		   //  nullptr, nullptr);
+
+	    run_sticker_s2mm_1.start();
+	    run_tile_s2mm_1.start();
+	
+	    run_tile_mm2s_1.wait();
+	    run_sticker_s2mm_1.wait();
+	    end = std::chrono::steady_clock::now();
+	    std::cout << "-----------------------------------------" << std::endl;
+	    std::cout << "PL & aie kernels complete in nanoseconds: "
+	        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
+	        << " ns" << std::endl;
+	    std::cout << "-----------------------------------------" << std::endl;
+	
+	    /////////////////////////////////////////////////
+	    // Synchronize the output buffer data from the device
+	    ///////////////////////////////////////////////
+	    std::cout << "Synchronize output buffers data to device global memory" << std::endl;
+	    start = std::chrono::steady_clock::now();
+	    img_out_buffer.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+	
+	    // /////////////////////////////////////////////////
+	    // // Read output buffer data to local buffer
+	    // /////////////////////////////////////////////////
+	    img_out_buffer.read(img_output_aie);
+	    end = std::chrono::steady_clock::now();
+	    std::cout << "-----------------------------------------" << std::endl;
+	    std::cout << "Transfer data from device to host in nanoseconds: "
+	        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
+	        << " ns" << std::endl;
+	    std::cout << "-----------------------------------------" << std::endl;
+	
+	    /////////////////////////////////////////////////
+	    // Correctness verification
+	    /////////////////////////////////////////////////
+	    std::cout << "Correctness verification" << std::endl;
+	    unsigned erro = 0;
+	    for (unsigned i = 0; i < img_element_number; i++) {
+	        if (abs(img_output_aie[i] - img_output_ref[i]) > 1e-3) {
+	            erro++;
+	        }
+	    }
+	    std::cout << "Erro time: " << erro << std::endl;
+
+	    /////////////////////////////////////////////////
+	    // Writing data to output file
+	    /////////////////////////////////////////////////
+	    std::cout << "Writing data to output file" << std::endl;
+	    std::ofstream outputfile;
+	    // std::cout << "Ref Out1 " << std::to_string(img_output_ref[0]) << std::endl;
+	    // std::cout << "AIE Out1 " << std::to_string(img_output_aie[0]) << std::endl;
+	    std::stringstream ss;
+	    ss << "build.hw/aie_hw_run_data/output";
+	    ss << id;
+	    ss << ".txt";
+	    outputfile.open(ss.str());
+	    for (unsigned i = 0; i < img_element_number; i++) {
+	        outputfile << img_output_aie[i] << std::endl;
+	    }
+	    outputfile.close();
+    }
 
     delete [] img_input;
     delete [] img_output_aie;
