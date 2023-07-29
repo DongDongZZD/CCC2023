@@ -15,7 +15,7 @@
 #define TILE_HEIGHT 32
 #define TILE_ELEMENT TILE_WIDTH * TILE_HEIGHT
 
-typedef qdma_axis<DWIDTH, 0, 0, 0> data;
+#define IMG_WIDTH 3840
+#define IMG_HEIGHT 2160
 
-unsigned img_width = 3840;
-unsigned img_height = 2160;
+typedef qdma_axis<DWIDTH, 0, 0, 0> data;
