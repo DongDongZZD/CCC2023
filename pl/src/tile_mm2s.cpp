@@ -102,6 +102,9 @@ void load_tail(ap_int<BUS_DWIDTH> *mem_in, ap_int<DWIDTH> *tile_input_buffer, un
 
     unsigned count = 0;
 
+    ap_int<BUS_DWIDTH> mem_in_tmp;
+    unsigned mem_in_index;
+
     if (tile_index_height >= 0 && tile_index_height < tile_height_number - 1 
             && tile_index_width >= 0 && tile_index_width < tile_width_number - 1) {
         for (unsigned th = 0; th < TILE_HEIGHT; th++) {
@@ -112,7 +115,7 @@ void load_tail(ap_int<BUS_DWIDTH> *mem_in, ap_int<DWIDTH> *tile_input_buffer, un
                 unsigned mem_in_index_gid = (th * IMG_WIDTH + tw + base) / DATA_NUM;
 
                 if (tw == 0 || mem_in_index_uid == 0) {
-                    ap_int<BUS_DWIDTH> mem_in_tmp = mem_in[mem_in_index_gid];
+                    mem_in_tmp = mem_in[mem_in_index_gid];
                 }
 
                 tile_input_buffer[count++] = mem_in_tmp.range((mem_in_index_uid + 1) * DWIDTH - 1, mem_in_index_uid * DWIDTH);

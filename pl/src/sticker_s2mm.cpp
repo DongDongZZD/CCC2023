@@ -7,7 +7,7 @@
 void load_tile(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
 hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
 hls::stream<data> &s7, hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
-ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height);
+ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned uid);
 
 void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>* mem_out,
                     unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height);
@@ -29,9 +29,9 @@ ap_int<DWIDTH> *mem_out) {
     unsigned pingpong = 0;
 
     for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-        #pragma HLS unroll
+        #pragma HLS unroll AIE_KERNEL_NUMBER
         load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-                  aie_input_buffer_0[uid], 0, uid, tile_num_width, tile_num_height);
+                  aie_input_buffer_0[uid], uid);
     }
 
     tile_loop:
@@ -40,13 +40,13 @@ ap_int<DWIDTH> *mem_out) {
         if (pingpong = 0) {
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll
+                #pragma HLS unroll AIE_KERNEL_NUMBER
                 load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-                          aie_input_buffer_1[uid], gid, uid, tile_num_width, tile_num_height);
+                          aie_input_buffer_1[uid], uid);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll
+                #pragma HLS unroll AIE_KERNEL_NUMBER
                 transfer_tile(aie_input_buffer_0[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
             }
 
@@ -57,13 +57,13 @@ ap_int<DWIDTH> *mem_out) {
         else {
             
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll
+                #pragma HLS unroll AIE_KERNEL_NUMBER
                 load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-                          aie_input_buffer_0[uid], gid, uid, tile_num_width, tile_num_height);
+                          aie_input_buffer_0[uid], uid);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll
+                #pragma HLS unroll AIE_KERNEL_NUMBER
                 transfer_tile(aie_input_buffer_1[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
             }
 
@@ -75,13 +75,13 @@ ap_int<DWIDTH> *mem_out) {
 
     if (pingpong == 0) {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll
+            #pragma HLS unroll AIE_KERNEL_NUMBER
             transfer_tile(aie_input_buffer_0[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
         }
     }
     else {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll
+            #pragma HLS unroll AIE_KERNEL_NUMBER
             transfer_tile(aie_input_buffer_1[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
         }
     }
@@ -163,60 +163,52 @@ void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>
 void load_tile(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
 hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
 hls::stream<data> &s7, hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
-ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height) {
+ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], unsigned uid) {
 
-    unsigned tile_index_width  = (gid * AIE_KERNEL_NUMBER + uid) % tile_num_width;
-    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_height;
-
-    unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
-    unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
-
-    unsigned count = 0;
-
-    for (int th = 0; th < TILE_HEIGHT; th++) {
-        for (int tw = 0; tw < TILE_WIDTH; tw++) {
-            data x;
-            switch(uid) {
-                case 0:
-                    aie_input_buffer[count++] = s0.read();
-                    break;
-                case 1:
-                    aie_input_buffer[count++] = s1.read();
-                    break;
-                case 2:
-                    aie_input_buffer[count++] = s2.read();
-                    break;
-                case 3:
-                    aie_input_buffer[count++] = s3.read();
-                    break;
-                case 4:
-                    aie_input_buffer[count++] = s4.read();
-                    break;
-                case 5:
-                    aie_input_buffer[count++] = s5.read();
-                    break;
-                case 6:
-                    aie_input_buffer[count++] = s6.read();
-                    break;
-                case 7:
-                    aie_input_buffer[count++] = s7.read();
-                    break;
-                case 8:
-                    aie_input_buffer[count++] = s8.read();
-                    break;
-                case 9:
-                    aie_input_buffer[count++] = s9.read();
-                    break;
-                case 10:
-                    aie_input_buffer[count++] = s10.read();
-                    break;
-                case 11:
-                    aie_input_buffer[count++] = s11.read();
-                    break;
-                default:
-                    aie_input_buffer[count++] = s0.read();
-                    break;
-            }
+    for (int i = 0; i < TILE_ELEMENT; i++) {
+        data x;
+        switch(uid) {
+            case 0:
+                x = s0.read();
+                break;
+            case 1:
+                x = s1.read();
+                break;
+            case 2:
+                x = s2.read();
+                break;
+            case 3:
+                x = s3.read();
+                break;
+            case 4:
+                x = s4.read();
+                break;
+            case 5:
+                x = s5.read();
+                break;
+            case 6:
+                x = s6.read();
+                break;
+            case 7:
+                x = s7.read();
+                break;
+            case 8:
+                x = s8.read();
+                break;
+            case 9:
+                x = s9.read();
+                break;
+            case 10:
+                x = s10.read();
+                break;
+            case 11:
+                x = s11.read();
+                break;
+            default:
+                x = s0.read();
+                break;
         }
+
+        aie_input_buffer[i] = x.data;
     }
 }
