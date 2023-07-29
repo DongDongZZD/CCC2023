@@ -46,7 +46,7 @@ class TopGraph : public graph {
         Filter2DBlock<100> F09;
         Filter2DBlock<100> F10;
         Filter2DBlock<100> F11;
-        // Filter2DBlock<100> F12;
+        Filter2DBlock<100> F12;
         // Filter2DBlock<100> F13;
         // Filter2DBlock<100> F14;
         // Filter2DBlock<100> F15;
