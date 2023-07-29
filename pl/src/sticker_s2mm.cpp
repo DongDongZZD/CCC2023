@@ -38,25 +38,25 @@ ap_int<DWIDTH> *mem_out) {
                     for (int tw = 0; tw < tile_width; tw++) {
                         data x;
                         switch(aie_index) {
-                            case 0:
+                            case 0, 1, 2, 3:
                                 x = s0.read();
                                 break;
-                            case 1:
+                            case 4, 5, 6, 7:
                                 x = s1.read();
                                 break;
-                            case 2:
+                            case 8, 9, 10, 11:
                                 x = s2.read();
                                 break;
-                            case 3:
+                            case 12, 13, 14, 15:
                                 x = s3.read();
                                 break;
-                            case 4:
+                            case 16, 17, 18, 19:
                                 x = s4.read();
                                 break;
-                            case 5:
+                            case 20, 21, 22, 23:
                                 x = s5.read();
                                 break;
-                            case 6:
+                            case 24, 25, 26, 27:
                                 x = s6.read();
                                 break;
                             default:

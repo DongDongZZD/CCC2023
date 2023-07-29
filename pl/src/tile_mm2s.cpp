@@ -58,25 +58,25 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                         x.keep_all();
                         // 将分块好的数据存入对应 aie 所读取的 mem 区域
                         switch(aie_index) {
-                            case 0:
+                            case 0, 1, 2, 3:
                                 s0.write(x);
                                 break;
-                            case 1:
+                            case 4, 5, 6, 7:
                                 s1.write(x);
                                 break;
-                            case 2:
+                            case 8, 9, 10, 11:
                                 s2.write(x);
                                 break;
-                            case 3:
+                            case 12, 13, 14, 15:
                                 s3.write(x);
                                 break;
-                            case 4:
+                            case 16, 17, 18, 19:
                                 s4.write(x);
                                 break;
-                            case 5:
+                            case 20, 21, 22, 23:
                                 s5.write(x);
                                 break;
-                            case 6:
+                            case 24, 25, 26, 27:
                                 s6.write(x);
                                 break;
                             default:

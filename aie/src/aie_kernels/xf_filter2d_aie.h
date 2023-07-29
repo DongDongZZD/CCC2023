@@ -15,7 +15,7 @@
  */
 
 #include <adf.h>
-//#include "../include.h"
+#include "../aie_kernels.h"
 
 #ifndef _AIE_FILTER2D_H_
 #define _AIE_FILTER2D_H_
@@ -25,9 +25,7 @@ namespace cv {
 namespace aie {
 
 int32_t kernel_coeff[16] = {64, 128, 64, 128, 256, 128, 64, 128, 64};
-int image_width = 64;
-int image_height = 32;
-int stride = 64;
+int stride = tile_width;
 
 /**
  * ----------------------------------------------------------------------------
@@ -157,7 +155,7 @@ void filter2D_api(input_window_int32* img_in, output_window_int32* img_out) {
         // Region 2
         // **************************************************************************
         // row 1 data used twice (or we use 0)
-        for (int j = 0; j < image_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 8x samples per loop
+        for (int j = 0; j < tile_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 8x samples per loop
             chess_prepare_for_pipelining {
                 // row 1 data used twice (or we use 0)
                 data_buf1 = upd_w(data_buf1, 1, *(ptr0--));               // _________|r1:08++15|_________|_________
@@ -228,7 +226,7 @@ void filter2D_api(input_window_int32* img_in, output_window_int32* img_out) {
     // **************************************************************************
     // Middle rows filtering, regions 4, 1, 5
     // **************************************************************************
-    for (int i = 0; i < image_height - 2; i++) {
+    for (int i = 0; i < tile_height - 2; i++) {
         // **********************************************************************
         // Region 4
         // **********************************************************************
@@ -262,7 +260,7 @@ void filter2D_api(input_window_int32* img_in, output_window_int32* img_out) {
         // **********************************************************************
         // Region 1: generic case, border effect free
         // **********************************************************************
-        for (int j = 0; j < image_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 16x samples per loop
+        for (int j = 0; j < tile_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 16x samples per loop
             chess_prepare_for_pipelining {
                 // row 1 data used twice (or we use 0)
                 data_buf1 = upd_w(data_buf1, 1, *(ptr0--));               // _________|r1:08++15|_________|_________
@@ -368,7 +366,7 @@ void filter2D_api(input_window_int32* img_in, output_window_int32* img_out) {
         // **************************************************************************
         // Region 3
         // **************************************************************************
-        for (int j = 0; j < image_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 8x samples per loop
+        for (int j = 0; j < tile_width - 2 * PARALLEL_FACTOR_32b; j += PARALLEL_FACTOR_32b) // 8x samples per loop
             chess_prepare_for_pipelining {
                 // 1st row
                 data_buf1 = upd_w(data_buf1, 1, *(ptr0--));               // _________|r1:08++15|_________|_________
@@ -428,6 +426,19 @@ void filter2D_api(input_window_int32* img_in, output_window_int32* img_out) {
         data_out = srs(acc, SRS_SHIFT);
         *(ptr_out++) = data_out;
     }
+}
+
+void filter2D_api_4_seq(input_window_int32* img_in, output_window_int32* img_out) {
+    filter2D_api(img_in, img_out);
+    window_incr(img_in, tile_width*tile_height);
+    window_incr(img_out, tile_width*tile_height);
+    filter2D_api(img_in, img_out);
+    window_incr(img_in, tile_width*tile_height);
+    window_incr(img_out, tile_width*tile_height);
+    filter2D_api(img_in, img_out);
+    window_incr(img_in, tile_width*tile_height);
+    window_incr(img_out, tile_width*tile_height);
+    filter2D_api(img_in, img_out);
 }
 
 } // aie

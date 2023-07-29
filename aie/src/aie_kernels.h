@@ -24,6 +24,8 @@
 
 const int kernel_width = 3;
 const int kernel_height = 3;
+const int tile_width = 64;
+const int tile_height = 32;
 
 #ifdef INLINE
 #define INLINE_DECL inline

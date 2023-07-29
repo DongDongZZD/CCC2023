@@ -18,5 +18,5 @@
 #include "xf_filter2d_aie.h"
 
 void filter2D(input_window_int32* input, output_window_int32* output) {
-	xf::cv::aie::filter2D_api(input, output);
+	xf::cv::aie::filter2D_api_4_seq(input, output);
 };
