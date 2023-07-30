@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     // 用来存储最后的计算结果
     // aie kernel ---(PL:sticker_s2mm_1)---> img_out_buffer
     // 后续：device mem (img_out_buffer) ------> host mem
-    auto img_out_buffer = xrt::bo(device, img_buffer_size, sticker_s2mm_1.group_id(7));
+    auto img_out_buffer = xrt::bo(device, img_buffer_size, sticker_s2mm_1.group_id(12));
 
     /////////////////////////////////////////////////
     // Read data from file 
