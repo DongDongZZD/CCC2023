@@ -34,7 +34,7 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
     tile_loop:
     for (unsigned gid = 1; gid < tile_loop_group; gid++) {
 
-        if (pingpong = 0) {
+        if (pingpong == 0) {
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
                 #pragma HLS unroll AIE_KERNEL_NUMBER
