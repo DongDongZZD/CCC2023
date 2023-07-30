@@ -113,14 +113,14 @@ int main(int argc, char** argv) {
 
     start = std::chrono::steady_clock::now();
     auto run_sticker_s2mm_1 = sticker_s2mm_1(
-	    nullptr, nullptr, nullptr, nullptr, nullptr,
-	    nullptr, nullptr, 
+	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
 	    img_out_buffer);
 
     auto run_tile_mm2s_1 = tile_mm2s_1(
 	    img_in_buffer, 
-	    nullptr, nullptr, nullptr, nullptr, nullptr,
-	    nullptr, nullptr);
+	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,);
 
     run_tile_mm2s_1.wait();
     run_sticker_s2mm_1.wait();
