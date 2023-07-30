@@ -13,7 +13,7 @@
 #include <xrt.h>
 #include <experimental/xrt_kernel.h>
 
-#define AIE_KERNEL_NUMBER 3
+#define AIE_KERNEL_NUMBER 12
 
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer);
 
@@ -118,12 +118,18 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     start = std::chrono::steady_clock::now();
     auto run_sticker_s2mm_1 = sticker_s2mm_1(
-	    nullptr, nullptr, nullptr,
+	    nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr,
 	    img_out_buffer);
 
     auto run_tile_mm2s_1 = tile_mm2s_1(
 	    img_in_buffer_0, img_in_buffer_1, img_in_buffer_2, 
-	    nullptr, nullptr, nullptr);
+	    nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr);
 
     run_tile_mm2s_1.wait();
     run_sticker_s2mm_1.wait();
@@ -244,7 +250,8 @@ int main(int argc, char** argv) {
     std::cout << std::setprecision(6) << std::setiosflags(std::ios::fixed);
     std::cout << "\tAverage transefer time from host TO   device: " << (average_trans_to_time / 1000000) << "ms" << std::endl;
     std::cout << "\tAverage transefer time from host FROM device: " << (average_trans_from_time / 1000000) << "ms" << std::endl;
-    std::cout << "\tAverage execution time                      : " << (average_execute_time / 1000000) << "ms" << std::endl << std::endl;
+    std::cout << "\tAverage AIE & PL  execution time            : " << (average_execute_time / 1000000) << "ms" << std::endl << std::endl;
+    std::cout << "\tTotal execution time                        : " << (average_execute_time + average_trans_to_time + average_trans_from_time/ 1000000) << "ms" << std::endl << std::endl;
     std::cout << "********************************************************************************" << std::endl << std::endl;
 
 

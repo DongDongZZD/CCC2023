@@ -5,7 +5,11 @@
 #include "config.h"
 
 // 将当前横纵坐标对应的 tile 拼接到图片中
-void sticker_s2mm(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, ap_int<DWIDTH> *mem_out) {
+void sticker_s2mm(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
+                  hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5,
+                  hls::stream<data> &s6, hls::stream<data> &s7, hls::stream<data> &s8,
+                  hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11,
+                  ap_int<DWIDTH> *mem_out) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_num_width  = ceil((float)(IMG_WIDTH  - TILE_WIDTH)  / (TILE_WIDTH  - 2)) + 1;
@@ -38,6 +42,33 @@ void sticker_s2mm(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data
                             break;
                         case 2:
                             x = s2.read();
+                            break;
+                        case 3:
+                            x = s3.read();
+                            break;
+                        case 4:
+                            x = s4.read();
+                            break;
+                        case 5:
+                            x = s5.read();
+                            break;
+                        case 6:
+                            x = s6.read();
+                            break;
+                        case 7:
+                            x = s7.read();
+                            break;
+                        case 8:
+                            x = s8.read();
+                            break;
+                        case 9:
+                            x = s9.read();
+                            break;
+                        case 10:
+                            x = s10.read();
+                            break;
+                        case 11:
+                            x = s11.read();
                             break;
                         default:
                             x = s0.read();

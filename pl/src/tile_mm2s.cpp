@@ -8,7 +8,10 @@ void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gi
 
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(ap_int<BUS_DWIDTH> *mem_in_0, ap_int<BUS_DWIDTH> *mem_in_1, ap_int<BUS_DWIDTH> *mem_in_2,
-hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2) {
+                  hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
+                  hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5,
+                  hls::stream<data> &s6, hls::stream<data> &s7, hls::stream<data> &s8,
+                  hls::stream<data> &s9, hls::stream<data> &s10, hls::stream<data> &s11) {
 #pragma HLS INTERFACE mode=m_axi bundle=M0 port=mem_in_0
 #pragma HLS INTERFACE mode=m_axi bundle=M1 port=mem_in_1
 #pragma HLS INTERFACE mode=m_axi bundle=M2 port=mem_in_2
@@ -20,9 +23,21 @@ hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2) {
     tile_loop:
     for (unsigned gid = 0; gid < tile_loop_group; gid++) {
         
-        transfer_mm2s(mem_in_0, s0, gid, 0, tile_width_number, tile_height_number);
-        transfer_mm2s(mem_in_1, s1, gid, 1, tile_width_number, tile_height_number);
-        transfer_mm2s(mem_in_2, s2, gid, 2, tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_0, s0,  gid, 0,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_1, s1,  gid, 1,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_2, s2,  gid, 2,  tile_width_number, tile_height_number);
+
+        transfer_mm2s(mem_in_0, s3,  gid, 3,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_1, s4,  gid, 4,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_2, s5,  gid, 5,  tile_width_number, tile_height_number);
+
+        transfer_mm2s(mem_in_0, s6,  gid, 6,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_1, s7,  gid, 7,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_2, s8,  gid, 8,  tile_width_number, tile_height_number);
+
+        transfer_mm2s(mem_in_0, s9,  gid, 9,  tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_1, s10, gid, 10, tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_2, s11, gid, 11, tile_width_number, tile_height_number);
 
     }
 }
