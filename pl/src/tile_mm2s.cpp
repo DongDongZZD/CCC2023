@@ -9,7 +9,9 @@ void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gi
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(ap_int<BUS_DWIDTH> *mem_in_0, ap_int<BUS_DWIDTH> *mem_in_1, ap_int<BUS_DWIDTH> *mem_in_2,
 hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2) {
-
+#pragma HLS INTERFACE mode=m_axi bundle=M0 port=mem_in_0
+#pragma HLS INTERFACE mode=m_axi bundle=M1 port=mem_in_1
+#pragma HLS INTERFACE mode=m_axi bundle=M2 port=mem_in_2
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_width_number  = ceil((float)(IMG_WIDTH  - TILE_WIDTH)  / (TILE_WIDTH  - 2)) + 1;
     unsigned tile_height_number = ceil((float)(IMG_HEIGHT - TILE_HEIGHT) / (TILE_HEIGHT - 2)) + 1;
