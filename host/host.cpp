@@ -82,8 +82,8 @@ int main(int argc, char** argv) {
     auto *img_output_aie = new int [img_element_number];
     auto *img_output_ref = new int [img_element_number];
 
-    std::cout << "--------------------------------------------------------------\n";
-    std::cout << "IMG 0  : ";
+    std::cout << "==========  START  ==========" << std::endl;
+    std::cout << "IMG " << "0/" << img_number << " : " ;
     for (unsigned int i = 0; i < img_element_number; i++) {
         img_input[i] = rand() % 100;
     }
@@ -152,8 +152,7 @@ int main(int argc, char** argv) {
 
     for(unsigned id = 1; id < img_number; id++){
 
-        std::cout << "--------------------------------------------------------------\n";
-	    std::cout << "IMG " << id  << " : " ;
+	    std::cout << "IMG " << id << "/" << img_number << " : " ;
 	    for (unsigned int i = 0; i < img_element_number; i++) {
 	        img_input[i] = rand() % 100;
 	    }
@@ -213,9 +212,9 @@ int main(int argc, char** argv) {
 	    }
 	    std::cout << "Erro time: " << erro << std::endl;
     }
-
+    std::cout << "==========  END  ==========" << std::endl;
 	/////////////////////////////////////////////////
-	// Correctness verification
+	// Process run time data
 	/////////////////////////////////////////////////
     long average_trans_to_time = 0;
     long average_trans_from_time = 0;
