@@ -110,7 +110,6 @@ int main(int argc, char** argv) {
     img_in_buffer_0.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     img_in_buffer_1.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     img_in_buffer_2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    std::cout << "host -- > device buffer" << std::endl;
     auto end = std::chrono::steady_clock::now();
     img_trans_to_time[0] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
