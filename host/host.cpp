@@ -216,9 +216,9 @@ int main(int argc, char** argv) {
 	/////////////////////////////////////////////////
 	// Process run time data
 	/////////////////////////////////////////////////
-    long average_trans_to_time = 0;
-    long average_trans_from_time = 0;
-    long average_execute_time = 0;
+    double average_trans_to_time = 0;
+    double average_trans_from_time = 0;
+    double average_execute_time = 0;
     std::sort(img_trans_to_time, img_trans_to_time + img_number);
     std::sort(img_trans_from_time, img_trans_from_time + img_number);
     std::sort(img_execute_time, img_execute_time + img_number);
