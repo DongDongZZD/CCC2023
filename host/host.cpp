@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     auto run_tile_mm2s_1 = tile_mm2s_1(
 	    img_in_buffer, 
 	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,);
+	    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     run_tile_mm2s_1.wait();
     run_sticker_s2mm_1.wait();
