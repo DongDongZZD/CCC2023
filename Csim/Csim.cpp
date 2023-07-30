@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#define AIE_KERNEL_NUMBER 3
+#define AIE_KERNEL_NUMBER 12
 #define BUS_DWIDTH 256
 #define DWIDTH 32
 #define DATA_NUM (BUS_DWIDTH / DWIDTH)
@@ -15,7 +15,7 @@
 #define TILE_HEIGHT 32
 #define TILE_ELEMENT TILE_WIDTH * TILE_HEIGHT
 
-unsigned img_number = 3;
+unsigned img_number = 4;
 
 typedef struct {
     int data[DATA_NUM];
@@ -25,8 +25,15 @@ typedef struct {
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer);
 void transfer_mm2s(data_bus* mem_in, int* s, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number, unsigned* count);
 void tile_mm2s(data_bus* mem_in_0, data_bus* mem_in_1, data_bus* mem_in_2,
-    int* s0, int* s1, int* s2);
-void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out);
+    int* s0, int* s1,  int* s2,
+    int* s3, int* s4,  int* s5,
+    int* s6, int* s7,  int* s8,
+    int* s9, int* s10, int* s11);
+void sticker_s2mm(int* s0, int* s1, int* s2,
+    int* s3, int* s4, int* s5,
+    int* s6, int* s7, int* s8,
+    int* s9, int* s10, int* s11,
+    int* mem_out);
 
 int main() {
 
@@ -131,7 +138,10 @@ int main() {
         std::cout << "Run the tile PL" << std::endl;
         tile_mm2s(
             img_in_buffer_0, img_in_buffer_1, img_in_buffer_2,
-            in_buffer[0], in_buffer[1], in_buffer[2]);
+            in_buffer[0], in_buffer[1],  in_buffer[2],
+            in_buffer[3], in_buffer[4],  in_buffer[5],
+            in_buffer[6], in_buffer[7],  in_buffer[8],
+            in_buffer[9], in_buffer[10], in_buffer[11]);
 
         std::cout << "AIE cal" << std::endl;
 
@@ -221,7 +231,10 @@ int main() {
 
         std::cout << "Run the sticker PL" << std::endl;
         sticker_s2mm(
-            out_buffer[0], out_buffer[1], out_buffer[2],
+            out_buffer[0], out_buffer[1],  out_buffer[2],
+            out_buffer[3], out_buffer[4],  out_buffer[5],
+            out_buffer[6], out_buffer[7],  out_buffer[8],
+            out_buffer[9], out_buffer[10], out_buffer[11],
             img_out_buffer);
 
         /////////////////////////////////////////////////
@@ -263,7 +276,11 @@ int main() {
 }
 
 // 将当前横纵坐标对应的 tile 拼接到图片中
-void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out) {
+void sticker_s2mm(int* s0, int* s1,  int* s2,
+                  int* s3, int* s4,  int* s5,
+                  int* s6, int* s7,  int* s8, 
+                  int* s9, int* s10, int* s11, 
+                  int* mem_out) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_num_width = ceil((float)(IMG_WIDTH - TILE_WIDTH) / (TILE_WIDTH - 2)) + 1;
@@ -298,6 +315,33 @@ void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out) {
                         break;
                     case 2:
                         x = s2[count[aie_index]++];
+                        break;
+                    case 3:
+                        x = s3[count[aie_index]++];
+                        break;
+                    case 4:
+                        x = s4[count[aie_index]++];
+                        break;
+                    case 5:
+                        x = s5[count[aie_index]++];
+                        break;
+                    case 6:
+                        x = s6[count[aie_index]++];
+                        break;
+                    case 7:
+                        x = s7[count[aie_index]++];
+                        break;
+                    case 8:
+                        x = s8[count[aie_index]++];
+                        break;
+                    case 9:
+                        x = s9[count[aie_index]++];
+                        break;
+                    case 10:
+                        x = s10[count[aie_index]++];
+                        break;
+                    case 11:
+                        x = s11[count[aie_index]++];
                         break;
                     default:
                         x = s0[count[aie_index]++];
@@ -368,7 +412,10 @@ void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out) {
 
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(data_bus* mem_in_0, data_bus* mem_in_1, data_bus* mem_in_2,
-    int* s0, int* s1, int* s2) {
+    int* s0, int* s1,  int* s2,
+    int* s3, int* s4,  int* s5,
+    int* s6, int* s7,  int* s8,
+    int* s9, int* s10, int* s11) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_width_number = ceil((float)(IMG_WIDTH - TILE_WIDTH) / (TILE_WIDTH - 2)) + 1;
@@ -379,9 +426,21 @@ void tile_mm2s(data_bus* mem_in_0, data_bus* mem_in_1, data_bus* mem_in_2,
 
     for (unsigned gid = 0; gid < tile_loop_group; gid++) {
 
-        transfer_mm2s(mem_in_0, s0, gid, 0, tile_width_number, tile_height_number, &count[0]);
-        transfer_mm2s(mem_in_1, s1, gid, 1, tile_width_number, tile_height_number, &count[1]);
-        transfer_mm2s(mem_in_2, s2, gid, 2, tile_width_number, tile_height_number, &count[2]);
+        transfer_mm2s(mem_in_0, s0, gid, 0, tile_width_number, tile_height_number,   &count[0]);
+        transfer_mm2s(mem_in_1, s1, gid, 1, tile_width_number, tile_height_number,   &count[1]);
+        transfer_mm2s(mem_in_2, s2, gid, 2, tile_width_number, tile_height_number,   &count[2]);
+
+        transfer_mm2s(mem_in_0, s3, gid, 3, tile_width_number, tile_height_number,   &count[3]);
+        transfer_mm2s(mem_in_1, s4, gid, 4, tile_width_number, tile_height_number,   &count[4]);
+        transfer_mm2s(mem_in_2, s5, gid, 5, tile_width_number, tile_height_number,   &count[5]);
+
+        transfer_mm2s(mem_in_0, s6, gid, 6, tile_width_number, tile_height_number,   &count[6]);
+        transfer_mm2s(mem_in_1, s7, gid, 7, tile_width_number, tile_height_number,   &count[7]);
+        transfer_mm2s(mem_in_2, s8, gid, 8, tile_width_number, tile_height_number,   &count[8]);
+
+        transfer_mm2s(mem_in_0, s9, gid, 9, tile_width_number, tile_height_number,   &count[9]);
+        transfer_mm2s(mem_in_1, s10, gid, 10, tile_width_number, tile_height_number, &count[10]);
+        transfer_mm2s(mem_in_2, s11, gid, 11, tile_width_number, tile_height_number, &count[11]);
 
     }
 }
