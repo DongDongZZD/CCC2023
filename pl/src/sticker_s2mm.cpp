@@ -91,7 +91,7 @@ void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>
                     unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height) {
     
     unsigned tile_index_width  = (gid * AIE_KERNEL_NUMBER + uid) % tile_num_width;
-    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_height;
+    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_width;
 
     unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
     unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2); 
