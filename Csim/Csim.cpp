@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#define AIE_KERNEL_NUMBER 12
+#define AIE_KERNEL_NUMBER 3
 #define BUS_DWIDTH 256
 #define DWIDTH 32
 #define DATA_NUM (BUS_DWIDTH / DWIDTH)
@@ -21,31 +21,12 @@ typedef struct {
     int data[DATA_NUM];
 } data_bus;
 
-void load_tile_s(int* s0, int* s1, int* s2,
-    int* s3, int* s4, int* s5, int* s6,
-    int* s7, int* s8, int* s9, int* s10, int* s11,
-    int aie_input_buffer[TILE_ELEMENT], unsigned uid, unsigned* count);
 
-void transfer_tile_s(int aie_input_buffer[TILE_ELEMENT], int* mem_out,
-    unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height);
-void sticker_s2mm(int* s0, int* s1, int* s2,
-    int* s3, int* s4, int* s5, int* s6,
-    int* s7, int* s8, int* s9, int* s10, int* s11,
-    int* mem_out);
-void tile_mm2s(data_bus* mem_in,
-    int* s0, int* s1, int* s2, int* s3,
-    int* s4, int* s5, int* s6, int* s7,
-    int* s8, int* s9, int* s10, int* s11);
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer);
-void load_tile(data_bus* mem_in, int* tile_input_buffer, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number);
-void transfer_tile(int* tile_input_buffer, unsigned uid,
-    int* s0, int* s1, int* s2, int* s3,
-    int* s4, int* s5, int* s6, int* s7,
-    int* s8, int* s9, int* s10, int* s11, unsigned* count);
-void tile_mm2s(data_bus* mem_in,
-    int* s0, int* s1, int* s2, int* s3,
-    int* s4, int* s5, int* s6, int* s7,
-    int* s8, int* s9, int* s10, int* s11);
+void transfer_mm2s(data_bus* mem_in, int* s, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number, unsigned* count);
+void tile_mm2s(data_bus* mem_in_0, data_bus* mem_in_1, data_bus* mem_in_2,
+    int* s0, int* s1, int* s2);
+void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out);
 
 int main() {
 
@@ -65,7 +46,9 @@ int main() {
     size_t img_size_in_bytes = sizeof(int) * img_element_number;
 
     // host mem ------> device mem (img_in_buffer)
-    data_bus* img_in_buffer = (data_bus*)calloc(img_element_number / DATA_NUM, sizeof(data_bus));
+    data_bus* img_in_buffer_0 = (data_bus*)calloc(img_element_number / DATA_NUM, sizeof(data_bus));
+    data_bus* img_in_buffer_1 = (data_bus*)calloc(img_element_number / DATA_NUM, sizeof(data_bus));
+    data_bus* img_in_buffer_2 = (data_bus*)calloc(img_element_number / DATA_NUM, sizeof(data_bus));
 
     // img_in_buffer ---(copy)---> in_buffer_
     // std::array<xrt::bo, AIE_KERNEL_NUMBER> in_buffer_;
@@ -121,7 +104,9 @@ int main() {
 
         for (int i = 0; i < img_element_number / DATA_NUM; i++) {
             for (int j = 0; j < DATA_NUM; j++) {
-                img_in_buffer[i].data[j] = img_input[i * DATA_NUM + j];
+                img_in_buffer_0[i].data[j] = img_input[i * DATA_NUM + j];
+                img_in_buffer_1[i].data[j] = img_input[i * DATA_NUM + j];
+                img_in_buffer_2[i].data[j] = img_input[i * DATA_NUM + j];
             }
         }
 
@@ -145,9 +130,8 @@ int main() {
 
         std::cout << "Run the tile PL" << std::endl;
         tile_mm2s(
-            img_in_buffer,
-            in_buffer[0], in_buffer[1], in_buffer[2], in_buffer[3], in_buffer[4], in_buffer[5],
-            in_buffer[6], in_buffer[7], in_buffer[8], in_buffer[9], in_buffer[10], in_buffer[11]);
+            img_in_buffer_0, img_in_buffer_1, img_in_buffer_2,
+            in_buffer[0], in_buffer[1], in_buffer[2]);
 
         std::cout << "AIE cal" << std::endl;
 
@@ -237,8 +221,7 @@ int main() {
 
         std::cout << "Run the sticker PL" << std::endl;
         sticker_s2mm(
-            out_buffer[0], out_buffer[1], out_buffer[2], out_buffer[3], out_buffer[4],  out_buffer[5], 
-            out_buffer[6], out_buffer[7], out_buffer[8], out_buffer[9], out_buffer[10], out_buffer[11],
+            out_buffer[0], out_buffer[1], out_buffer[2],
             img_out_buffer);
 
         /////////////////////////////////////////////////
@@ -262,7 +245,9 @@ int main() {
 
     
 
-    free(img_in_buffer);
+    free(img_in_buffer_0);
+    free(img_in_buffer_1);
+    free(img_in_buffer_2);
     for (int i = 0; i < AIE_KERNEL_NUMBER; i++) {
         free(in_buffer[i]);
         free(out_buffer[i]);
@@ -278,342 +263,130 @@ int main() {
 }
 
 // 将当前横纵坐标对应的 tile 拼接到图片中
-void sticker_s2mm(int* s0, int* s1, int* s2,
-    int* s3, int* s4, int* s5, int* s6,
-    int* s7, int* s8, int* s9, int* s10, int* s11,
-    int* mem_out) {
-
-    int aie_input_buffer_0[AIE_KERNEL_NUMBER][TILE_ELEMENT];
-    int aie_input_buffer_1[AIE_KERNEL_NUMBER][TILE_ELEMENT];
+void sticker_s2mm(int* s0, int* s1, int* s2, int* mem_out) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_num_width = ceil((float)(IMG_WIDTH - TILE_WIDTH) / (TILE_WIDTH - 2)) + 1;
     unsigned tile_num_height = ceil((float)(IMG_HEIGHT - TILE_HEIGHT) / (TILE_HEIGHT - 2)) + 1;
-    unsigned tile_loop_group = ceil((float)(tile_num_width * tile_num_height) / AIE_KERNEL_NUMBER);
 
-    unsigned pingpong = 0;
+    // 用作 mem_out 的索引
+    unsigned mem_out_index;
+
     unsigned count[AIE_KERNEL_NUMBER] = { 0 };
 
-    for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-        load_tile_s(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-            aie_input_buffer_0[uid], uid, count);
-    }
+    // 遍历所有的 tile
+    for (unsigned tile_index_height = 0; tile_index_height < tile_num_height; tile_index_height++) {
+        for (unsigned tile_index_width = 0; tile_index_width < tile_num_width; tile_index_width++) {
 
-    for (unsigned gid = 1; gid < tile_loop_group; gid++) {
+            // 当前的 tile 应该从第 aie_index 个 aie kernel 对应的 mem 处取得
+            unsigned aie_index = (tile_index_height * tile_num_width + tile_index_width) % AIE_KERNEL_NUMBER;
 
-        if (pingpong == 0) {
+            // 当前 tile 在当前图片中的偏移
+            unsigned offset_width = tile_index_width * (TILE_WIDTH - 2);
+            unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
 
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                load_tile_s(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-                    aie_input_buffer_1[uid], uid, count);
-            }
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                transfer_tile_s(aie_input_buffer_0[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
-                /*printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, gid - 1, uid);
-                for (int x = 0; x < IMG_HEIGHT; x++) {
-                    for (int y = 0; y < IMG_WIDTH; y++) {
-                        printf("%5d ", mem_out[x * IMG_WIDTH + y]);
+            // 遍历当前 tile
+            for (int th = 0; th < TILE_HEIGHT; th++) {
+                for (int tw = 0; tw < TILE_WIDTH; tw++) {
+                    int x;
+                    switch (aie_index) {
+                    case 0:
+                        x = s0[count[aie_index]++];
+                        break;
+                    case 1:
+                        x = s1[count[aie_index]++];
+                        break;
+                    case 2:
+                        x = s2[count[aie_index]++];
+                        break;
+                    default:
+                        x = s0[count[aie_index]++];
+                        break;
                     }
-                    printf("\n");
-                }*/
-                /*for (int x = 0; x < TILE_HEIGHT; x++) {
-                    for (int y = 0; y < TILE_WIDTH; y++) {
-                        printf("%5d ", aie_input_buffer_0[uid][x * TILE_WIDTH + y]);
+
+                    mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
+
+                    if (tile_index_height == 0 && tile_index_width == 0) {
+                        if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
+                            mem_out[mem_out_index] = x;
+                        }
                     }
-                    printf("\n");
-                }*/
-            }
 
-            pingpong = 1;
-
-        }
-
-        else {
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                load_tile_s(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
-                    aie_input_buffer_0[uid], uid, count);
-            }
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                transfer_tile_s(aie_input_buffer_1[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
-                /*printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, gid - 1, uid);
-                for (int x = 0; x < IMG_HEIGHT; x++) {
-                    for (int y = 0; y < IMG_WIDTH; y++) {
-                        printf("%5d ", mem_out[x * IMG_WIDTH + y]);
+                    else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
+                        if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
+                            mem_out[mem_out_index] = x;
+                        }
                     }
-                    printf("\n");
-                }*/
-            }
 
-            pingpong = 0;
+                    else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
+                        if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-        }
+                    else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
+                        if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-    }
+                    else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
+                        if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-    if (pingpong == 0) {
-        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            transfer_tile_s(aie_input_buffer_0[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
-            //printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, tile_loop_group - 1, uid);
-            /*for (int x = 0; x < IMG_HEIGHT; x++) {
-                for (int y = 0; y < IMG_WIDTH; y++) {
-                    printf("%5d ", mem_out[x * IMG_WIDTH + y]);
-                }
-                printf("\n");
-            }*/
-            /*for (int x = 0; x < TILE_WIDTH; x++) {
-                for (int y = 0; y < TILE_HEIGHT; y++) {
-                    printf("%5d ", aie_input_buffer_0[uid][x * TILE_WIDTH + y]);
-                }
-                printf("\n");
-            }*/
-        }
-    }
-    else {
-        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            transfer_tile_s(aie_input_buffer_1[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
-            /*printf("---------------------pingpong = %d |  gid = %d ------------------------------\n", pingpong, tile_loop_group - 1);
-            for (int x = 0; x < IMG_HEIGHT; x++) {
-                for (int y = 0; y < IMG_WIDTH; y++) {
-                    printf("%5d ", mem_out[x * IMG_WIDTH + y]);
-                }
-                printf("\n");
-            }*/
-        }
-    }
-}
+                    else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
+                        if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-void transfer_tile_s(int aie_input_buffer[TILE_ELEMENT], int* mem_out,
-    unsigned gid, unsigned uid, unsigned tile_num_width, unsigned tile_num_height) {
+                    else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
+                        if (th >= 1 && th < TILE_HEIGHT && tw >= 0 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-    unsigned tile_index_width = (gid * AIE_KERNEL_NUMBER + uid) % tile_num_width;
-    unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_num_width;
+                    else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
+                        if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
 
-    unsigned offset_width = tile_index_width * (TILE_WIDTH - 2);
-    unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
-
-    for (int th = 0; th < TILE_HEIGHT; th++) {
-        for (int tw = 0; tw < TILE_WIDTH; tw++) {
-
-            unsigned mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
-            unsigned aie_input_index = th * TILE_WIDTH + tw;
-
-            if (tile_index_height == 0 && tile_index_width == 0) {
-                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
-                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
-                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
-                if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
-                if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
-                if (th >= 1 && th < TILE_HEIGHT && tw >= 0 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
-                if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
-                }
-            }
-
-            else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
-                if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH && (th + offset_height < IMG_HEIGHT) && (tw + offset_width < IMG_WIDTH)) {
-                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
+                    else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
+                        if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH && (th + offset_height < IMG_HEIGHT) && (tw + offset_width < IMG_WIDTH)) {
+                            mem_out[mem_out_index] = x;
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-void load_tile_s(int* s0, int* s1, int* s2,
-    int* s3, int* s4, int* s5, int* s6,
-    int* s7, int* s8, int* s9, int* s10, int* s11,
-    int aie_input_buffer[TILE_ELEMENT], unsigned uid, unsigned* count) {
-
-    for (int i = 0; i < TILE_ELEMENT; i++) {
-        int x;
-        switch (uid) {
-        case 0:
-            x = s0[count[uid]++];
-            break;
-        case 1:
-            x = s1[count[uid]++];
-            break;
-        case 2:
-            x = s2[count[uid]++];
-            break;
-        case 3:
-            x = s3[count[uid]++];
-            break;
-        case 4:
-            x = s4[count[uid]++];
-            break;
-        case 5:
-            x = s5[count[uid]++];
-            break;
-        case 6:
-            x = s6[count[uid]++];
-            break;
-        case 7:
-            x = s7[count[uid]++];
-            break;
-        case 8:
-            x = s8[count[uid]++];
-            break;
-        case 9:
-            x = s9[count[uid]++];
-            break;
-        case 10:
-            x = s10[count[uid]++];
-            break;
-        case 11:
-            x = s11[count[uid]++];
-            break;
-        default:
-            x = s0[count[uid]++];
-            break;
-        }
-
-        aie_input_buffer[i] = x;
-    }
-}
 
 // 对一张图片的指定位置进行 tile 操作
-void tile_mm2s(data_bus* mem_in,
-    int* s0, int* s1, int* s2, int* s3,
-    int* s4, int* s5, int* s6, int* s7,
-    int* s8, int* s9, int* s10, int* s11) {
-
-   int tile_input_buffer_0[AIE_KERNEL_NUMBER][TILE_ELEMENT];
-   int tile_input_buffer_1[AIE_KERNEL_NUMBER][TILE_ELEMENT];
+void tile_mm2s(data_bus* mem_in_0, data_bus* mem_in_1, data_bus* mem_in_2,
+    int* s0, int* s1, int* s2) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_width_number = ceil((float)(IMG_WIDTH - TILE_WIDTH) / (TILE_WIDTH - 2)) + 1;
     unsigned tile_height_number = ceil((float)(IMG_HEIGHT - TILE_HEIGHT) / (TILE_HEIGHT - 2)) + 1;
     unsigned tile_loop_group = ceil((float)(tile_width_number * tile_height_number) / AIE_KERNEL_NUMBER);
 
-    unsigned pingpong = 0;
     unsigned count[AIE_KERNEL_NUMBER] = { 0 };
 
-    for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-        load_tile(mem_in, tile_input_buffer_0[uid], 0, uid, tile_width_number, tile_height_number);
-        /*printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, 0, uid);
-        for (int x = 0; x < TILE_HEIGHT; x++) {
-            for (int y = 0; y < TILE_WIDTH; y++) {
-                printf("%5d ", tile_input_buffer_0[uid][x * TILE_WIDTH + y]);
-            }
-            printf("\n");
-        }*/
-    }
+    for (unsigned gid = 0; gid < tile_loop_group; gid++) {
 
-    for (unsigned gid = 1; gid < tile_loop_group; gid++) {
+        transfer_mm2s(mem_in_0, s0, gid, 0, tile_width_number, tile_height_number, &count[0]);
+        transfer_mm2s(mem_in_1, s1, gid, 1, tile_width_number, tile_height_number, &count[1]);
+        transfer_mm2s(mem_in_2, s2, gid, 2, tile_width_number, tile_height_number, &count[2]);
 
-        if (pingpong == 0) {
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                load_tile(mem_in, tile_input_buffer_1[uid], gid, uid, tile_width_number, tile_height_number);
-                /*printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, gid, uid);
-                for (int x = 0; x < TILE_HEIGHT; x++) {
-                    for (int y = 0; y < TILE_WIDTH; y++) {
-                        printf("%5d ", tile_input_buffer_0[uid][x * TILE_WIDTH + y]);
-                    }
-                    printf("\n");
-                }*/
-            }
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                transfer_tile(tile_input_buffer_0[uid], uid,
-                    s0, s1, s2, s3, s4, s5,
-                    s6, s7, s8, s9, s10, s11, count);
-                /*printf("---------------------pingpong = %d |  gid = %d ------------------------------\n", pingpong, gid);
-                printf("---------------------pingpong = %d |  gid = %d ------------------------------\n", pingpong, gid);
-                printf("---------------------pingpong = %d |  gid = %d ------------------------------\n", pingpong, gid);
-                for (int x = 0; x < TILE_HEIGHT; x++) {
-                    for (int y = 0; y < TILE_WIDTH; y++) {
-                        printf("%5d ", s0[x * TILE_WIDTH + y]);
-                    }
-                    printf("\n");
-                }*/
-            }
-
-            pingpong = 1;
-
-        }
-
-        else {
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                load_tile(mem_in, tile_input_buffer_0[uid], gid, uid, tile_width_number, tile_height_number);
-                /*printf("---------------------pingpong = %d |  gid = %d  uid = %d ------------------------------\n", pingpong, gid, uid);
-                for (int x = 0; x < TILE_HEIGHT; x++) {
-                    for (int y = 0; y < TILE_WIDTH; y++) {
-                        printf("%5d ", tile_input_buffer_0[uid][x * TILE_WIDTH + y]);
-                    }
-                    printf("\n");
-                }*/
-            }
-
-            for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                transfer_tile(tile_input_buffer_1[uid], uid,
-                    s0, s1, s2, s3, s4, s5,
-                    s6, s7, s8, s9, s10, s11, count);
-            }
-
-            pingpong = 0;
-
-        }
-
-    }
-
-    if (pingpong == 0) {
-        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            transfer_tile(tile_input_buffer_0[uid], uid,
-                s0, s1, s2, s3, s4, s5,
-                s6, s7, s8, s9, s10, s11, count);
-        }
-    }
-    else {
-        for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            transfer_tile(tile_input_buffer_1[uid], uid,
-                s0, s1, s2, s3, s4, s5,
-                s6, s7, s8, s9, s10, s11, count);
-        }
     }
 }
 
-void load_tile(data_bus* mem_in,int* tile_input_buffer, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number) {
+void transfer_mm2s(data_bus* mem_in, int* s, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number, unsigned* count) {
 
     unsigned tile_index_width = (gid * AIE_KERNEL_NUMBER + uid) % tile_width_number;
     unsigned tile_index_height = (gid * AIE_KERNEL_NUMBER + uid) / tile_width_number;
@@ -622,8 +395,6 @@ void load_tile(data_bus* mem_in,int* tile_input_buffer, unsigned gid, unsigned u
     unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2);
 
     unsigned base = offset_height * IMG_WIDTH + offset_width;
-
-    unsigned count = 0;
 
     data_bus mem_in_tmp;
     unsigned mem_in_index;
@@ -636,14 +407,13 @@ void load_tile(data_bus* mem_in,int* tile_input_buffer, unsigned gid, unsigned u
                 unsigned mem_in_index_uid = (th * IMG_WIDTH + tw + base) % DATA_NUM;
                 unsigned mem_in_index_gid = (th * IMG_WIDTH + tw + base) / DATA_NUM;
 
-                
-
                 if (tw == 0 || mem_in_index_uid == 0) {
                     mem_in_tmp = mem_in[mem_in_index_gid];
-                    //printf("====================================\nmem_in_index_uid = %d  mem_in_index_gid = %d \n=============================\n", mem_in_index_uid, mem_in_index_gid);
                 }
 
-                tile_input_buffer[count++] = mem_in_tmp.data[mem_in_index_uid];
+                int x;
+                x = mem_in_tmp.data[mem_in_index_uid];
+                s[(*count)++] = x;
             }
         }
     }
@@ -665,71 +435,19 @@ void load_tile(data_bus* mem_in,int* tile_input_buffer, unsigned gid, unsigned u
                 else
                     mem_in_index = -1;
 
+                int x;
                 if (mem_in_index == -1)
-                    tile_input_buffer[count++] = 0;
+                    x = 0;
                 else {
                     unsigned mem_in_index_gid = mem_in_index / DATA_NUM;
                     unsigned mem_in_index_uid = mem_in_index % DATA_NUM;
-                    tile_input_buffer[count++] = mem_in[mem_in_index_gid].data[mem_in_index_uid];
+                    x = mem_in[mem_in_index_gid].data[mem_in_index_uid];
                 }
+                s[(*count)++] = x;
             }
         }
     }
-}
 
-void transfer_tile_stream(int* tile_input_buffer, int* s, unsigned* count) {
-    int x;
-    for (unsigned i = 0; i < TILE_ELEMENT; i++) {
-        x = tile_input_buffer[i];
-        s[(*count)++] = x;
-    }
-}
-
-void transfer_tile(int* tile_input_buffer, unsigned uid,
-    int* s0, int* s1, int* s2, int* s3,
-    int* s4, int* s5, int* s6, int* s7,
-    int* s8, int* s9, int* s10, int* s11, unsigned* count) {
-    switch (uid) {
-    case 0:
-        transfer_tile_stream(tile_input_buffer, s0, &count[uid]);
-        break;
-    case 1:
-        transfer_tile_stream(tile_input_buffer, s1, &count[uid]);
-        break;
-    case 2:
-        transfer_tile_stream(tile_input_buffer, s2, &count[uid]);
-        break;
-    case 3:
-        transfer_tile_stream(tile_input_buffer, s3, &count[uid]);
-        break;
-    case 4:
-        transfer_tile_stream(tile_input_buffer, s4, &count[uid]);
-        break;
-    case 5:
-        transfer_tile_stream(tile_input_buffer, s5, &count[uid]);
-        break;
-    case 6:
-        transfer_tile_stream(tile_input_buffer, s6, &count[uid]);
-        break;
-    case 7:
-        transfer_tile_stream(tile_input_buffer, s7, &count[uid]);
-        break;
-    case 8:
-        transfer_tile_stream(tile_input_buffer, s8, &count[uid]);
-        break;
-    case 9:
-        transfer_tile_stream(tile_input_buffer, s9, &count[uid]);
-        break;
-    case 10:
-        transfer_tile_stream(tile_input_buffer, s10, &count[uid]);
-        break;
-    case 11:
-        transfer_tile_stream(tile_input_buffer, s11, &count[uid]);
-        break;
-    default:
-        transfer_tile_stream(tile_input_buffer, s0, &count[uid]);
-        break;
-    }
 }
 
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer) {
