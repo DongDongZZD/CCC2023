@@ -233,6 +233,7 @@ int main(int argc, char** argv) {
     average_trans_from_time /= (img_number - 2);
 
     std::cout << "********************************************************************************" << std::endl << std::endl;
+    std::cout << setiosflags(std::ios::right) << setprecision(6);
     std::cout << "\tAverage transefer time from host TO   device: " << std::setprecision (15) << (average_trans_to_time / 1000000) << "ms" << std::endl;
     std::cout << "\tAverage transefer time from host FROM device: " << std::setprecision (15) << (average_trans_from_time / 1000000) << "ms" << std::endl;
     std::cout << "\tAverage execution time                      : " << std::setprecision (15) << ( average_execute_time / 1000000) << "ms" << std::endl << std::endl;
