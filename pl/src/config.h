@@ -12,6 +12,6 @@ typedef qdma_axis<DWIDTH, 0, 0, 0> data;
 
 unsigned img_width = 3840;
 unsigned img_height = 2160;
-unsigned img_number = 2;
+unsigned img_number = 1;
 unsigned tile_width = 64;
 unsigned tile_height = 32;
