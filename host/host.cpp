@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
     std::cout << std::setprecision(6) << std::setiosflags(std::ios::fixed);
     std::cout << "\tTotal transefer time from host TO   device: " << (img_trans_to_time / 1000000) << "ms" << std::endl;
     std::cout << "\tTotal transefer time from host FROM device: " << (img_trans_from_time / 1000000) << "ms" << std::endl;
-    std::cout << "\tTotal execution time                      : " << (img_execute_time / 1000000) << "ms" << std::endl << std::endl;
+    std::cout << "\tTotal AIE & PL  time                      : " << (img_execute_time / 1000000) << "ms" << std::endl << std::endl;
     std::cout << "********************************************************************************" << std::endl << std::endl;
 	
     delete [] img_input;
