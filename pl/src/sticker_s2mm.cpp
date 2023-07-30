@@ -29,7 +29,7 @@ ap_int<DWIDTH> *mem_out) {
     unsigned pingpong = 0;
 
     for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-        #pragma HLS unroll AIE_KERNEL_NUMBER
+        #pragma HLS unroll factor=AIE_KERNEL_NUMBER
         load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
                   aie_input_buffer_0[uid], uid);
     }
@@ -40,13 +40,13 @@ ap_int<DWIDTH> *mem_out) {
         if (pingpong == 0) {
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
                           aie_input_buffer_1[uid], uid);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 transfer_tile(aie_input_buffer_0[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
             }
 
@@ -57,13 +57,13 @@ ap_int<DWIDTH> *mem_out) {
         else {
             
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 load_tile(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11,
                           aie_input_buffer_0[uid], uid);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 transfer_tile(aie_input_buffer_1[uid], mem_out, gid - 1, uid, tile_num_width, tile_num_height);
             }
 
@@ -75,13 +75,13 @@ ap_int<DWIDTH> *mem_out) {
 
     if (pingpong == 0) {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll AIE_KERNEL_NUMBER
+            #pragma HLS unroll factor=AIE_KERNEL_NUMBER
             transfer_tile(aie_input_buffer_0[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
         }
     }
     else {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll AIE_KERNEL_NUMBER
+            #pragma HLS unroll factor=AIE_KERNEL_NUMBER
             transfer_tile(aie_input_buffer_1[uid], mem_out, tile_loop_group - 1, uid, tile_num_width, tile_num_height);
         }
     }
