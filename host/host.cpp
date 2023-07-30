@@ -144,11 +144,7 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     img_in_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     auto end = std::chrono::steady_clock::now();
-    std::cout << "-----------------------------------------" << std::endl;
-    std::cout << "Transfer data from host to device in nanoseconds: "
-        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
-        << " ns" << std::endl;
-    std::cout << "-----------------------------------------" << std::endl;
+    double img_trans_to_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
     /////////////////////////////////////////////////
     // Execute the PL compute units
@@ -203,11 +199,7 @@ int main(int argc, char** argv) {
 	    img_out_buffer);
     run_sticker_mm2mm_1.wait();
     end = std::chrono::steady_clock::now();
-    std::cout << "-----------------------------------------" << std::endl;
-    std::cout << "PL & aie kernels complete in nanoseconds: "
-        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
-        << " ns" << std::endl;
-    std::cout << "-----------------------------------------" << std::endl;
+    double img_execute_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
     /////////////////////////////////////////////////
     // Synchronize the output buffer data from the device
@@ -221,11 +213,7 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     img_out_buffer.read(img_output_aie);
     end = std::chrono::steady_clock::now();
-    std::cout << "-----------------------------------------" << std::endl;
-    std::cout << "Transfer data from device to host in nanoseconds: "
-        << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
-        << " ns" << std::endl;
-    std::cout << "-----------------------------------------" << std::endl;
+    double img_trans_from_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
     /////////////////////////////////////////////////
     // Correctness verification
@@ -239,18 +227,12 @@ int main(int argc, char** argv) {
     }
     std::cout << "Erro time: " << erro << std::endl;
 
-    /////////////////////////////////////////////////
-    // Writing data to output file
-    /////////////////////////////////////////////////
-    std::cout << "Writing data to output file" << std::endl;
-    std::ofstream outputfile;
-    // std::cout << "Ref Out1 " << std::to_string(img_output_ref[0]) << std::endl;
-    // std::cout << "AIE Out1 " << std::to_string(img_output_aie[0]) << std::endl;
-    outputfile.open("build.hw/aie_hw_run_data/output.txt");
-    for (unsigned i = 0; i < img_element_number; i++) {
-        outputfile << img_output_aie[i] << std::endl;
-    }
-    outputfile.close();
+    std::cout << "********************************************************************************" << std::endl << std::endl;
+    std::cout << std::setprecision(6) << std::setiosflags(std::ios::fixed);
+    std::cout << "\tTotal transefer time from host TO   device: " << (img_trans_to_time / 1000000) << "ms" << std::endl;
+    std::cout << "\tTotal transefer time from host FROM device: " << (img_trans_from_time / 1000000) << "ms" << std::endl;
+    std::cout << "\tTotal execution time                      : " << (img_execute_time / 1000000) << "ms" << std::endl << std::endl;
+    std::cout << "********************************************************************************" << std::endl << std::endl;
 
     delete [] img_input;
     delete [] img_output_aie;
