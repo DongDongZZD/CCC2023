@@ -18,7 +18,11 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
     unsigned mem_in_index_gid;
     unsigned mem_in_index_uid;
     ap_int<BUS_DWIDTH> mem_in_tmp;
-    ap_int<DWIDTH> mem_tmp;
+    ap_int<32> mem_tmp;
+    ap_int<32> mem_tmp_32;
+    ap_int<64> mem_tmp_64;
+    ap_int<96> mem_tmp_96;
+    ap_int<128> mem_tmp_128;
 
     // 遍历所有图片
     for (unsigned img_index = 0; img_index < img_number; img_index++) {
@@ -38,6 +42,7 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                 unsigned offset_height = tile_index_height * (tile_height - 2);
                 // ap_int<DWIDTH>* base = (ap_int<DWIDTH>*)mem_in + offset_img + offset_height * img_width + offset_width;
                 unsigned base = offset_img + offset_height * img_width + offset_width;
+                unsigned count = 0;
 
                 if (tile_index_height >= 0 && tile_index_height < tile_height_number - 1 
                         && tile_index_width >= 0 && tile_index_width < tile_width_number - 1) {
@@ -52,41 +57,58 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                                 mem_in_tmp = mem_in[mem_in_index_gid];
                             }
 
-                            mem_tmp = mem_in_tmp.range((mem_in_index_uid + 1) * DWIDTH - 1, mem_in_index_uid * DWIDTH);
-
-                            data x;
-                            x.data = mem_tmp;
-                            x.keep_all();
-                            switch(aie_index) {
-                                case 0:
-                                    s0.write(x);
-                                    break;
-                                case 1:
-                                    s1.write(x);
-                                    break;
-                                case 2:
-                                    s2.write(x);
-                                    break;
-                                case 3:
-                                    s3.write(x);
-                                    break;
-                                case 4:
-                                    s4.write(x);
-                                    break;
-                                case 5:
-                                    s5.write(x);
-                                    break;
-                                case 6:
-                                    s6.write(x);
-                                    break;
-                                default:
-                                    s0.write(x);
+                            mem_tmp = mem_in_tmp.range((mem_in_index_uid + 1) * 32 - 1, mem_in_index_uid * 32);
+                            
+                            if (count == 0) {
+                                mem_tmp_32 = mem_tmp;
+                                count++;
+                            }
+                            else if (count == 1) {
+                                mem_tmp_64 = mem_tmp_32.concat(mem_tmp);
+                                count++;
+                            }
+                            else if (count == 2) {
+                                mem_tmp_96 = mem_tmp_64.concat(mem_tmp);
+                                count++;
+                            }
+                            else if (count == 3) {
+                                mem_tmp_128 = mem_tmp_96.concat(mem_tmp);
+                                x.data = mem_tmp_128;
+                                x.keep_all();
+                                switch(aie_index) {
+                                    case 0:
+                                        s0.write(x);
+                                        break;
+                                    case 1:
+                                        s1.write(x);
+                                        break;
+                                    case 2:
+                                        s2.write(x);
+                                        break;
+                                    case 3:
+                                        s3.write(x);
+                                        break;
+                                    case 4:
+                                        s4.write(x);
+                                        break;
+                                    case 5:
+                                        s5.write(x);
+                                        break;
+                                    case 6:
+                                        s6.write(x);
+                                        break;
+                                    default:
+                                        s0.write(x);
+                                }
+                                count = 0;
+                                mem_tmp_128 = ap_int<128>("0", 16);
                             }
                         }
                     }
                 }
 
                 else {
+                    count = 0;
                     for (unsigned th = 0; th < tile_height; th++) {
                         for (unsigned tw = 0; tw < tile_width; tw++) {
                             
@@ -103,42 +125,61 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                             else
                                 mem_in_index = -1;
 
-                            data x;
+                            // data x;
                             if (mem_in_index == -1)
-                                x.data = 0;
+                                // x.data = 0;
+                                mem_tmp = ap_int<32>("0", 16);
                             else {
                                 mem_in_index_gid = mem_in_index / DATA_NUM;
                                 mem_in_index_uid = mem_in_index % DATA_NUM;
-                                mem_tmp = mem_in[mem_in_index_gid].range((mem_in_index_uid + 1) * DWIDTH - 1, mem_in_index_uid * DWIDTH);
-                                x.data = mem_tmp;
+                                mem_tmp = mem_in[mem_in_index_gid].range((mem_in_index_uid + 1) * 32 - 1, mem_in_index_uid * 32);
+                                // x.data = mem_tmp;
                             }
-                                
-                            x.keep_all();
-                            // 将分块好的数据存入对应 aie 所读取的 mem 区域
-                            switch(aie_index) {
-                                case 0:
-                                    s0.write(x);
-                                    break;
-                                case 1:
-                                    s1.write(x);
-                                    break;
-                                case 2:
-                                    s2.write(x);
-                                    break;
-                                case 3:
-                                    s3.write(x);
-                                    break;
-                                case 4:
-                                    s4.write(x);
-                                    break;
-                                case 5:
-                                    s5.write(x);
-                                    break;
-                                case 6:
-                                    s6.write(x);
-                                    break;
-                                default:
-                                    s0.write(x);
+                            
+                            if (count == 0) {
+                                mem_tmp_32 = mem_tmp;
+                                count++;
+                            }
+                            else if (count == 1) {
+                                mem_tmp_64 = mem_tmp_32.concat(mem_tmp);
+                                count++;
+                            }
+                            else if (count == 2) {
+                                mem_tmp_96 = mem_tmp_64.concat(mem_tmp);
+                                count++;
+                            }
+                            else if (count == 3) {
+                                mem_tmp_128 = mem_tmp_96.concat(mem_tmp);
+                                x.data = mem_tmp_128;
+                                x.keep_all();
+                                // 将分块好的数据存入对应 aie 所读取的 mem 区域
+                                switch(aie_index) {
+                                    case 0:
+                                        s0.write(x);
+                                        break;
+                                    case 1:
+                                        s1.write(x);
+                                        break;
+                                    case 2:
+                                        s2.write(x);
+                                        break;
+                                    case 3:
+                                        s3.write(x);
+                                        break;
+                                    case 4:
+                                        s4.write(x);
+                                        break;
+                                    case 5:
+                                        s5.write(x);
+                                        break;
+                                    case 6:
+                                        s6.write(x);
+                                        break;
+                                    default:
+                                        s0.write(x);
+                                }
+                                count = 0;
+                                mem_tmp_128 = ap_int<128>("0", 16);
                             }
                         }
                     }

@@ -99,7 +99,7 @@ class TopGraph : public graph {
                  const std::array<const char *, num_output> &output_names,
                  const std::array<const char *, num_output> &output_files) {
                     for (unsigned i = 0; i < in.size(); ++i) {
-                        in[i] = input_plio::create(input_names[i], plio_32_bits, input_files[i]);
+                        in[i] = input_plio::create(input_names[i], plio_128_bits, input_files[i]);
                     }
                     for (unsigned i = 0; i < out.size(); ++i) {
                         out[i] = output_plio::create(output_names[i], plio_32_bits, output_files[i]);
