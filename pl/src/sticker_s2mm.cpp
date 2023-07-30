@@ -4,10 +4,12 @@
 #include <math.h>
 #include "config.h"
 
+// typedef qdma_axis<32,0,0,0> data_32;
+
 // 将当前横纵坐标对应的 tile 拼接到图片中
-void sticker_s2mm(hls::stream<qdma<32,0,0,0>> &s0, hls::stream<qdma<32,0,0,0>> &s1, hls::stream<qdma<32,0,0,0>> &s2, 
-hls::stream<qdma<32,0,0,0>> &s3, hls::stream<qdma<32,0,0,0>> &s4, hls::stream<qdma<32,0,0,0>> &s5, hls::stream<qdma<32,0,0,0>> &s6,
-ap_int<qdma<32,0,0,0>> *mem_out) {
+void sticker_s2mm(hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, 
+hls::stream<data> &s3, hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6,
+ap_int<data> *mem_out) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_num_width  = ceil((float)(img_width  - tile_width)  / (tile_width  - 2)) + 1;

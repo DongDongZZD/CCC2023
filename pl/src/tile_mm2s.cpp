@@ -6,8 +6,8 @@
 
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(ap_int<BUS_DWIDTH> *mem_in, 
-hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2, hls::stream<data> &s3, 
-hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
+hls::stream<data_128> &s0, hls::stream<data_128> &s1, hls::stream<data_128> &s2, hls::stream<data_128> &s3, 
+hls::stream<data_128> &s4, hls::stream<data_128> &s5, hls::stream<data_128> &s6) {
 
     // 每张图片的 tile 个数（width 和 height 两个维度）
     unsigned tile_width_number  = ceil((float)(img_width  - tile_width)  / (tile_width  - 2)) + 1;
@@ -73,6 +73,7 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                             }
                             else if (count == 3) {
                                 mem_tmp_128 = mem_tmp_96.concat(mem_tmp);
+                                data_128 x;
                                 x.data = mem_tmp_128;
                                 x.keep_all();
                                 switch(aie_index) {
@@ -125,7 +126,7 @@ hls::stream<data> &s4, hls::stream<data> &s5, hls::stream<data> &s6) {
                             else
                                 mem_in_index = -1;
 
-                            // data x;
+                            data_128 x;
                             if (mem_in_index == -1)
                                 // x.data = 0;
                                 mem_tmp = ap_int<32>("0", 16);

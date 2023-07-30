@@ -8,10 +8,11 @@
 
 #define AIE_KERNEL_NUMBER 7
 #define BUS_DWIDTH 256
-#define DWIDTH 128
+#define DWIDTH 32
 #define DATA_NUM (BUS_DWIDTH / 32)
 
 typedef qdma_axis<DWIDTH, 0, 0, 0> data;
+typedef qdma_axis<128,0,0,0> data_128;
 
 unsigned img_width = 3840;
 unsigned img_height = 2160;
