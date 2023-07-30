@@ -84,9 +84,9 @@ void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gi
                     unsigned mem_in_index_gid = mem_in_index / DATA_NUM;
                     unsigned mem_in_index_uid = mem_in_index % DATA_NUM;
                     x.data = mem_in[mem_in_index_gid].range((mem_in_index_uid + 1) * DWIDTH - 1, mem_in_index_uid * DWIDTH);
+                }
                 x.keep_all();
                 s.write(x);
-                }
             }
         }
     }
