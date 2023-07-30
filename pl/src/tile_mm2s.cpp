@@ -4,6 +4,8 @@
 #include <math.h>
 #include "config.h"
 
+void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gid, unsigned uid, unsigned tile_width_number, unsigned tile_height_number);
+
 // 对一张图片的指定位置进行 tile 操作
 void tile_mm2s(ap_int<BUS_DWIDTH> *mem_in_0, ap_int<BUS_DWIDTH> *mem_in_1, ap_int<BUS_DWIDTH> *mem_in_2,
 hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2) {
@@ -16,9 +18,9 @@ hls::stream<data> &s0, hls::stream<data> &s1, hls::stream<data> &s2) {
     tile_loop:
     for (unsigned gid = 0; gid < tile_loop_group; gid++) {
         
-        transfer_mm2s(mem_in_0, s0, gid, uid, tile_width_number, tile_height_number);
-        transfer_mm2s(mem_in_1, s1, gid, uid, tile_width_number, tile_height_number);
-        transfer_mm2s(mem_in_2, s2, gid, uid, tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_0, s0, gid, 0, tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_1, s1, gid, 1, tile_width_number, tile_height_number);
+        transfer_mm2s(mem_in_2, s2, gid, 2, tile_width_number, tile_height_number);
 
     }
 }
@@ -32,8 +34,6 @@ void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gi
     unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2); 
 
     unsigned base = offset_height * IMG_WIDTH + offset_width;
-    
-    unsigned count = 0;
 
     ap_int<BUS_DWIDTH> mem_in_tmp;
     unsigned mem_in_index;
@@ -42,6 +42,7 @@ void transfer_mm2s(ap_int<BUS_DWIDTH>* mem_in, hls::stream<data> &s, unsigned gi
             && tile_index_width >= 0 && tile_index_width < tile_width_number - 1) {
         for (unsigned th = 0; th < TILE_HEIGHT; th++) {
             for (unsigned tw = 0; tw < TILE_WIDTH; tw++) {
+
                 #pragma HLS unroll
                 
                 unsigned mem_in_index_uid = (th * IMG_WIDTH + tw + base) % DATA_NUM;
