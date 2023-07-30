@@ -96,64 +96,63 @@ void transfer_tile(ap_int<DWIDTH> aie_input_buffer[TILE_ELEMENT], ap_int<DWIDTH>
     unsigned offset_width  = tile_index_width  * (TILE_WIDTH  - 2);
     unsigned offset_height = tile_index_height * (TILE_HEIGHT - 2); 
 
-    unsigned count = 0;
-
     for (int th = 0; th < TILE_HEIGHT; th++) {
         for (int tw = 0; tw < TILE_WIDTH; tw++) {
 
             unsigned mem_out_index = (th + offset_height) * IMG_WIDTH + tw + offset_width;
+            unsigned aie_input_index = th * TILE_WIDTH + tw;
 
             if (tile_index_height == 0 && tile_index_width == 0) {
                 if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_height == 0 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
                 if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_width == 0 && tile_index_height > 0 && tile_index_height <= tile_num_height - 2) {
                 if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 0 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_width > 0 && tile_index_height > 0 && tile_index_width <= tile_num_width - 2 && tile_index_height <= tile_num_height - 2) {
                 if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH - 1) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_height == 0 && tile_index_width == tile_num_width - 1) {
                 if (th >= 0 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_height > 0 && tile_index_height <= tile_num_height - 2 && tile_index_width == tile_num_width - 1) {
                 if (th >= 1 && th < TILE_HEIGHT - 1 && tw >= 1 && tw < TILE_WIDTH && tw + offset_width < IMG_WIDTH) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_width == 0 && tile_index_height == tile_num_height - 1) {
                 if (th >= 1 && th < TILE_HEIGHT && tw >= 0 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_height == tile_num_height - 1 && tile_index_width > 0 && tile_index_width <= tile_num_width - 2) {
                 if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH - 1 && th + offset_height < IMG_HEIGHT) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
 
             else if (tile_index_height == tile_num_height - 1 && tile_index_width == tile_num_width - 1) {
                 if (th >= 1 && th < TILE_HEIGHT && tw >= 1 && tw < TILE_WIDTH && (th + offset_height < IMG_HEIGHT) && (tw + offset_width < IMG_WIDTH)) {
-                    mem_out[mem_out_index] = aie_input_buffer[count++];
+                    mem_out[mem_out_index] = aie_input_buffer[aie_input_index];
                 }
             }
         }
