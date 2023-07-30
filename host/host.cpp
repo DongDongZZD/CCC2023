@@ -233,9 +233,9 @@ int main(int argc, char** argv) {
     average_trans_from_time /= (img_number - 2);
 
     std::cout << "********************************************************************************" << std::endl << std::endl;
-    std::cout << "\tAverage transefer time from host TO   device: " << average_trans_to_time << "ns" << std::endl;
-    std::cout << "\tAverage transefer time from host FROM device: " << average_trans_from_time << "ns" << std::endl;
-    std::cout << "\tAverage execution time                      : " << average_execute_time << "ns" << std::endl << std::endl;
+    std::cout << "\tAverage transefer time from host TO   device: " << std::format("{}", average_trans_to_time / 1000000) << "ms" << std::endl;
+    std::cout << "\tAverage transefer time from host FROM device: " << std::format("{}", average_trans_from_time / 1000000) << "ms" << std::endl;
+    std::cout << "\tAverage execution time                      : " << std::format("{}", average_execution_time / 1000000) << "ms" << std::endl << std::endl;
     std::cout << "********************************************************************************" << std::endl << std::endl;
 
 
