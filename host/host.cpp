@@ -13,7 +13,7 @@
 #include <xrt.h>
 #include <experimental/xrt_kernel.h>
 
-#define AIE_KERNEL_NUMBER 12
+#define AIE_KERNEL_NUMBER 3
 
 void cal_ref(int* input_buffer, unsigned width, unsigned height, int* kernel_coeff, int* ref_buffer);
 
