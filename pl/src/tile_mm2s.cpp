@@ -37,12 +37,12 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
         if (pingpong == 0) {
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 load_tail(mem_in, tile_input_buffer_1[uid], gid, uid, tile_width_number, tile_height_number);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 transfer_tail(tile_input_buffer_0[uid], uid,
                                 s0, s1, s2, s3, s4,  s5,
                                 s6, s7, s8, s9, s10, s11);
@@ -55,12 +55,12 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
         else {
             
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 load_tail(mem_in, tile_input_buffer_0[uid], gid, uid, tile_width_number, tile_height_number);
             }
 
             for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-                #pragma HLS unroll AIE_KERNEL_NUMBER
+                #pragma HLS unroll factor=AIE_KERNEL_NUMBER
                 transfer_tail(tile_input_buffer_1[uid], uid,
                                 s0, s1, s2, s3, s4,  s5,
                                 s6, s7, s8, s9, s10, s11);
@@ -74,7 +74,7 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
 
     if (pingpong == 0) {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll AIE_KERNEL_NUMBER
+            #pragma HLS unroll factor=AIE_KERNEL_NUMBER
             transfer_tail(tile_input_buffer_0[uid], uid,
                             s0, s1, s2, s3, s4,  s5,
                             s6, s7, s8, s9, s10, s11);
@@ -82,7 +82,7 @@ hls::stream<data> &s8, hls::stream<data> &s9, hls::stream<data> &s10, hls::strea
     }
     else {
         for (unsigned uid = 0; uid < AIE_KERNEL_NUMBER; uid++) {
-            #pragma HLS unroll AIE_KERNEL_NUMBER
+            #pragma HLS unroll factor=AIE_KERNEL_NUMBER
             transfer_tail(tile_input_buffer_1[uid], uid,
                             s0, s1, s2, s3, s4,  s5,
                             s6, s7, s8, s9, s10, s11);
