@@ -251,7 +251,7 @@ int main(int argc, char** argv) {
     std::cout << "\tAverage transefer time from host TO   device: " << (average_trans_to_time / 1000000) << "ms" << std::endl;
     std::cout << "\tAverage transefer time from host FROM device: " << (average_trans_from_time / 1000000) << "ms" << std::endl;
     std::cout << "\tAverage AIE & PL  execution time            : " << (average_execute_time / 1000000) << "ms" << std::endl << std::endl;
-    std::cout << "\tTotal execution time                        : " << (average_execute_time + average_trans_to_time + average_trans_from_time/ 1000000) << "ms" << std::endl << std::endl;
+    std::cout << "\tTotal execution time                        : " << (average_execute_time + average_trans_to_time + average_trans_from_time) / 1000000 << "ms" << std::endl << std::endl;
     std::cout << "********************************************************************************" << std::endl << std::endl;
 
 
