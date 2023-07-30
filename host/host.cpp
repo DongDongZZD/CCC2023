@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     std::cout << "Allocate Buffer in Global Memory" << std::endl;
     unsigned img_width   = 3840;
     unsigned img_height  = 2160;
-    unsigned img_number  = strtoul(argv[2]);
+    unsigned img_number  = strtoul(argv[2], NULL, 0);
     
     // 一张 img 中的元素个数
     unsigned img_element_number  = img_width * img_height;
@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
 	    start = std::chrono::steady_clock::now();
 
 	    run_sticker_s2mm_1.start();
-	    run_tile_s2mm_1.start();
+	    run_tile_mm2s_1.start();
 	
 	    run_tile_mm2s_1.wait();
 	    run_sticker_s2mm_1.wait();
