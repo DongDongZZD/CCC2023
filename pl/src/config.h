@@ -6,7 +6,7 @@
 #include <ap_int.h>
 #include <hls_stream.h>
 
-#define AIE_KERNEL_NUMBER 12
+#define AIE_KERNEL_NUMBER 3
 #define BUS_DWIDTH 256
 #define DWIDTH 32
 #define DATA_NUM (BUS_DWIDTH / DWIDTH)
