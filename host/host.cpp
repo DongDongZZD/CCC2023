@@ -62,8 +62,6 @@ int main(int argc, char** argv) {
     // host mem ------> device mem (img_in_buffer)
     // 后续：img_in_buffer ---(PL:tile_mm2s_1)---> aie kernel
     auto img_in_buffer_0 = xrt::bo(device, img_buffer_size, tile_mm2s_1.group_id(0));
-    auto img_in_buffer_1 = xrt::bo(device, img_buffer_size, tile_mm2s_1.group_id(1));
-    auto img_in_buffer_2 = xrt::bo(device, img_buffer_size, tile_mm2s_1.group_id(2));
     
     // 用来存储最后的计算结果
     // aie kernel ---(PL:sticker_s2mm_1)---> img_out_buffer
@@ -101,15 +99,11 @@ int main(int argc, char** argv) {
     /////////////////////////////////////////////////
     auto start = std::chrono::steady_clock::now();
     img_in_buffer_0.write(img_input);
-    img_in_buffer_1.write(img_input);
-    img_in_buffer_2.write(img_input);
 
     /////////////////////////////////////////////////
     // Synchronize input buffers data to device global memory
     /////////////////////////////////////////////////
     img_in_buffer_0.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    img_in_buffer_1.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    img_in_buffer_2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     auto end = std::chrono::steady_clock::now();
     img_trans_to_time[0] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
@@ -125,7 +119,7 @@ int main(int argc, char** argv) {
 	    img_out_buffer);
 
     auto run_tile_mm2s_1 = tile_mm2s_1(
-	    img_in_buffer_0, img_in_buffer_1, img_in_buffer_2, 
+	    img_in_buffer_0, img_in_buffer_0,
 	    nullptr, nullptr, nullptr, 
         nullptr, nullptr, nullptr, 
         nullptr, nullptr, nullptr, 
@@ -177,15 +171,11 @@ int main(int argc, char** argv) {
 	    /////////////////////////////////////////////////
 	    auto start = std::chrono::steady_clock::now();
         img_in_buffer_0.write(img_input);
-        img_in_buffer_1.write(img_input);
-        img_in_buffer_2.write(img_input);
 
         /////////////////////////////////////////////////
         // Synchronize input buffers data to device global memory
         /////////////////////////////////////////////////
         img_in_buffer_0.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-        img_in_buffer_1.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-        img_in_buffer_2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 	    auto end = std::chrono::steady_clock::now();
         img_trans_to_time[id] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 	
